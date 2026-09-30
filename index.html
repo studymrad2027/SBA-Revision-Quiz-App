@@ -198,6 +198,7 @@ button{font-family:Georgia,serif;cursor:pointer;}
       <button class="btn-template" onclick="downloadTemplate()">&#11015; Download Excel Template</button>
     </div>
     <div class="sync-status" id="importStatus"></div>
+    <div class="sync-status" id="sheetSetsStatus"></div>
     <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)">
     <button class="btn-timed" onclick="startExam('timed',-1)">&#9201; Timed Mode &mdash; 30 Seconds Per Question</button>
     <button class="btn-full" onclick="startExam('normal',-1)">&#9654; Full Exam &mdash; Mixed 100 Questions</button>
@@ -402,24 +403,50 @@ function addSheetQuestions(rawRows){
 }
 
 function loadPersistedQuestions(){
-  if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL.indexOf('PASTE_YOUR')===0)return;
+  var statusEl=document.getElementById('sheetSetsStatus');
+  if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL.indexOf('PASTE_YOUR')===0){
+    if(statusEl)statusEl.textContent='';
+    return;
+  }
   var cached=null;
   try{cached=JSON.parse(localStorage.getItem('sba_q_cache')||'null');}catch(e){}
   if(cached&&cached.rows&&cached.rows.length)addSheetQuestions(cached.rows);
+  var dots=0,timer=null;
+  if(statusEl){
+    statusEl.textContent='Checking Google Sheet for question sets';
+    timer=setInterval(function(){
+      dots=(dots+1)%4;
+      statusEl.textContent='Checking Google Sheet for question sets'+'.'.repeat(dots);
+    },400);
+  }
   fetch(APPS_SCRIPT_URL+'?action=questions',{cache:'no-store'}).then(function(r){
-    if(!r.ok)throw new Error('bad response');
+    if(!r.ok)throw new Error('HTTP '+r.status);
     return r.json();
   }).then(function(rows){
-    if(!rows||!rows.length)return;
+    if(timer)clearInterval(timer);
+    if(!rows||!rows.length){
+      SETS=SETS.slice(0,BASE_SET_COUNT);
+      SL=SL.slice(0,BASE_SET_COUNT);
+      buildSetGrid();
+      try{localStorage.removeItem('sba_q_cache');}catch(e){}
+      if(statusEl)statusEl.textContent='No extra sets found in the Google Sheet yet.';
+      return;
+    }
     var cachedStr=cached&&cached.rows?JSON.stringify(cached.rows):null;
+    var countBefore=SETS.length;
     if(cachedStr!==JSON.stringify(rows)){
       // rebuild sets fresh so a page that already added the cached copy doesn't duplicate it
       SETS=SETS.slice(0,BASE_SET_COUNT);
       SL=SL.slice(0,BASE_SET_COUNT);
       addSheetQuestions(rows);
     }
+    var extraSets=SETS.length-BASE_SET_COUNT;
+    if(statusEl)statusEl.textContent=extraSets>0?('Loaded '+extraSets+' extra set(s) from your Google Sheet ('+rows.length+' questions).'):'No extra sets found in the Google Sheet yet.';
     try{localStorage.setItem('sba_q_cache',JSON.stringify({rows:rows}));}catch(e){}
-  }).catch(function(){});
+  }).catch(function(err){
+    if(timer)clearInterval(timer);
+    if(statusEl)statusEl.textContent='Could not check the Google Sheet ('+(err&&err.message?err.message:'connection error')+'). '+(cached&&cached.rows&&cached.rows.length?'Showing sets from last successful check.':'Showing built-in sets only.');
+  });
 }
 
 function downloadTemplate(){
