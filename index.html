@@ -777,7 +777,7 @@ function startExam(m,setIdx){
     qs=getMixed(seed);
     lbl=m==='timed'?'Timed Mode':'Full Exam';
   } else {
-    qs=seedShuffle(SETS[setIdx],11*(setIdx+1)).slice();
+    qs=SETS[setIdx].slice();
     lbl=SL[setIdx];
   }
   ans=new Array(qs.length).fill(null);cur=0;hintShown=false;
