@@ -309,7 +309,31 @@ button{font-family:Georgia,serif;cursor:pointer;}
 
 <script>
 // ==== CONFIG: paste your Google Apps Script Web App URL between the quotes below ====
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxthf6h0V89OTrzIk3LEg-Is80byR0XQLYvIzTgvcRMq5XgWU3pZcqRYlbWCAktEr1exA/exec';
+var SUPABASE_URL = 'https://hdbbewazxtvpcjrtdtqq.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkYmJld2F6eHR2cGNqcnRkdHFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4MDYyNTcsImV4cCI6MjEwNjM4MjI1N30.f2FNEwyddGknkzWYoJxmgsH8dqCcR0kLEs6jfAB2VkY';
+function supaReady(){return SUPABASE_URL&&SUPABASE_URL.indexOf('PASTE_YOUR')!==0;}
+function supaHeaders(extra){
+  var h={'apikey':SUPABASE_ANON_KEY,'Authorization':'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json'};
+  if(extra)for(var k in extra)h[k]=extra[k];
+  return h;
+}
+function questionToSupaRow(q){
+  function strip(o){return String(o||'').replace(/^[A-E]\.\s*/,'');}
+  return {
+    set_name:q.set||'1', system:q.s, question:q.q,
+    option_a:strip(q.o[0]), option_b:strip(q.o[1]), option_c:strip(q.o[2]), option_d:strip(q.o[3]), option_e:strip(q.o[4]),
+    correct_answer:q.a, explanation:q.e, reference:q.ref||'', image_url:q.img||'',
+    difficulty:q.difficulty||'', topic:q.topic||'', key_point:q.kp||'', hint:q.hint||''
+  };
+}
+function supaRowToExcelRow(r){
+  return {
+    'Set':r.set_name||'1','System':r.system,'Question':r.question,
+    'Option A':r.option_a,'Option B':r.option_b,'Option C':r.option_c,'Option D':r.option_d,'Option E':r.option_e,
+    'Correct Answer':r.correct_answer,'Explanation':r.explanation,'Reference':r.reference,'Image Path/URL':r.image_url,
+    'Difficulty':r.difficulty,'Topic':r.topic,'Key Point':r.key_point,'Hint':r.hint
+  };
+}
 // =====================================================================================
 var QUOTES=[
   {t:"The secret of getting ahead is getting started.",a:"Mark Twain"},
@@ -351,7 +375,7 @@ async function importExcel(event){
       SL.push(g.label);
     });
     buildSetGrid();
-    saveQuestionsToSheet(rows);
+    saveQuestionsToSupabase(imported);
     alert('Added '+imported.length+' questions as '+groups.length+' new set(s) (Set '+(startNum+1)+(groups.length>1?(' to Set '+SETS.length):'')+'). Your original sets are unchanged.');
   }catch(error){
     console.error(error);
@@ -360,36 +384,34 @@ async function importExcel(event){
   event.target.value='';
 }
 
-function saveQuestionsToSheet(rawRows){
+function saveQuestionsToSupabase(importedQuestions){
   var statusEl=document.getElementById('importStatus');
-  if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL.indexOf('PASTE_YOUR')===0){
+  if(!supaReady()){
     if(statusEl)statusEl.textContent='Added for this session only (online sync not set up yet).';
     return;
   }
   var dots=0,timer=null;
   if(statusEl){
-    statusEl.textContent='Saving to Google Sheet';
+    statusEl.textContent='Saving to database';
     timer=setInterval(function(){
       dots=(dots+1)%4;
-      statusEl.textContent='Saving to Google Sheet'+'.'.repeat(dots);
+      statusEl.textContent='Saving to database'+'.'.repeat(dots);
     },400);
   }
-  fetch(APPS_SCRIPT_URL,{
+  var payload=importedQuestions.map(questionToSupaRow);
+  fetch(SUPABASE_URL+'/rest/v1/questions',{
     method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({type:'questions',rows:rawRows})
+    headers:supaHeaders({'Prefer':'return=minimal'}),
+    body:JSON.stringify(payload)
   }).then(function(r){
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    return r.json();
-  }).then(function(res){
     if(timer)clearInterval(timer);
     if(statusEl){
-      if(res&&res.ok)statusEl.textContent='Saved to Google Sheet. Everyone will see these questions next time they open the app.';
-      else statusEl.textContent='Upload failed \u2014 questions are only in this session. Check the Apps Script deployment.';
+      if(r.ok)statusEl.textContent='Saved to database. Everyone will see these questions next time they open the app.';
+      else statusEl.textContent='Upload failed (HTTP '+r.status+') \u2014 questions are only in this session. Check your Supabase table and policies.';
     }
   }).catch(function(){
     if(timer)clearInterval(timer);
-    if(statusEl)statusEl.textContent='Upload failed \u2014 questions are only in this session. Check your connection or Apps Script deployment.';
+    if(statusEl)statusEl.textContent='Upload failed \u2014 questions are only in this session. Check your connection or Supabase setup.';
   });
 }
 
@@ -404,7 +426,7 @@ function addSheetQuestions(rawRows){
 
 function loadPersistedQuestions(){
   var statusEl=document.getElementById('sheetSetsStatus');
-  if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL.indexOf('PASTE_YOUR')===0){
+  if(!supaReady()){
     if(statusEl)statusEl.textContent='';
     return;
   }
@@ -413,39 +435,38 @@ function loadPersistedQuestions(){
   if(cached&&cached.rows&&cached.rows.length)addSheetQuestions(cached.rows);
   var dots=0,timer=null;
   if(statusEl){
-    statusEl.textContent='Checking Google Sheet for question sets';
+    statusEl.textContent='Checking database for question sets';
     timer=setInterval(function(){
       dots=(dots+1)%4;
-      statusEl.textContent='Checking Google Sheet for question sets'+'.'.repeat(dots);
+      statusEl.textContent='Checking database for question sets'+'.'.repeat(dots);
     },400);
   }
-  fetch(APPS_SCRIPT_URL+'?action=questions',{cache:'no-store'}).then(function(r){
+  fetch(SUPABASE_URL+'/rest/v1/questions?select=*&order=id.asc',{headers:supaHeaders(),cache:'no-store'}).then(function(r){
     if(!r.ok)throw new Error('HTTP '+r.status);
     return r.json();
-  }).then(function(rows){
+  }).then(function(dbRows){
     if(timer)clearInterval(timer);
-    if(!rows||!rows.length){
+    var rows=(dbRows||[]).map(supaRowToExcelRow);
+    if(!rows.length){
       SETS=SETS.slice(0,BASE_SET_COUNT);
       SL=SL.slice(0,BASE_SET_COUNT);
       buildSetGrid();
       try{localStorage.removeItem('sba_q_cache');}catch(e){}
-      if(statusEl)statusEl.textContent='No extra sets found in the Google Sheet yet.';
+      if(statusEl)statusEl.textContent='No extra sets found in the database yet.';
       return;
     }
     var cachedStr=cached&&cached.rows?JSON.stringify(cached.rows):null;
-    var countBefore=SETS.length;
     if(cachedStr!==JSON.stringify(rows)){
-      // rebuild sets fresh so a page that already added the cached copy doesn't duplicate it
       SETS=SETS.slice(0,BASE_SET_COUNT);
       SL=SL.slice(0,BASE_SET_COUNT);
       addSheetQuestions(rows);
     }
     var extraSets=SETS.length-BASE_SET_COUNT;
-    if(statusEl)statusEl.textContent=extraSets>0?('Loaded '+extraSets+' extra set(s) from your Google Sheet ('+rows.length+' questions).'):'No extra sets found in the Google Sheet yet.';
+    if(statusEl)statusEl.textContent=extraSets>0?('Loaded '+extraSets+' extra set(s) from your database ('+rows.length+' questions).'):'No extra sets found in the database yet.';
     try{localStorage.setItem('sba_q_cache',JSON.stringify({rows:rows}));}catch(e){}
   }).catch(function(err){
     if(timer)clearInterval(timer);
-    if(statusEl)statusEl.textContent='Could not check the Google Sheet ('+(err&&err.message?err.message:'connection error')+'). '+(cached&&cached.rows&&cached.rows.length?'Showing sets from last successful check.':'Showing built-in sets only.');
+    if(statusEl)statusEl.textContent='Could not check the database ('+(err&&err.message?err.message:'connection error')+'). '+(cached&&cached.rows&&cached.rows.length?'Showing sets from last successful check.':'Showing built-in sets only.');
   });
 }
 
@@ -585,7 +606,7 @@ function saveResultLocally(record){
 
 function submitResultOnline(record){
   var statusEl=document.getElementById('syncStatus');
-  if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL.indexOf('PASTE_YOUR')===0){
+  if(!supaReady()){
     if(statusEl)statusEl.textContent='Saved on this device only (online sync not set up yet).';
     return;
   }
@@ -598,13 +619,21 @@ function submitResultOnline(record){
       statusEl.textContent='Saving to leaderboard'+'.'.repeat(dots);
     },400);
   }
-  fetch(APPS_SCRIPT_URL,{
+  fetch(SUPABASE_URL+'/rest/v1/results',{
     method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify(record)
-  }).then(function(){
+    headers:supaHeaders({'Prefer':'return=minimal'}),
+    body:JSON.stringify({
+      username:record.username,
+      set_label:record.setLabel,
+      mode:record.mode,
+      score:record.score,
+      total:record.total,
+      percent:record.percent,
+      system_breakdown:record.systemBreakdown
+    })
+  }).then(function(r){
     if(savingTimer)clearInterval(savingTimer);
-    if(statusEl)statusEl.textContent='Saved to leaderboard.';
+    if(statusEl)statusEl.textContent=r.ok?'Saved to leaderboard.':'Could not reach leaderboard (saved on this device only).';
   }).catch(function(){
     if(savingTimer)clearInterval(savingTimer);
     if(statusEl)statusEl.textContent='Could not reach leaderboard (saved on this device only).';
@@ -658,13 +687,12 @@ function loadLeaderboard(){
   var statusEl=document.getElementById('lbStatus');
   var table=document.getElementById('lbTable');
   var body=document.getElementById('lbBody');
-  if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL.indexOf('PASTE_YOUR')===0){
+  if(!supaReady()){
     table.style.display='none';
     statusEl.style.display='';
-    statusEl.textContent='Leaderboard is not set up yet. Paste your Apps Script URL into APPS_SCRIPT_URL in the code.';
+    statusEl.textContent='Leaderboard is not set up yet. Add your Supabase URL and anon key to the code.';
     return;
   }
-  // Show cached results immediately (fast first paint) while a fresh copy loads in the background
   var cached=null;
   try{cached=JSON.parse(localStorage.getItem('sba_lb_cache')||'null');}catch(e){}
   if(cached&&cached.data&&cached.data.length){
@@ -675,14 +703,14 @@ function loadLeaderboard(){
   }else{
     table.style.display='none';
     statusEl.style.display='';
-    startLbDots('Loading (first load can take a few seconds)');
+    startLbDots('Loading');
   }
   var controller=(typeof AbortController!=='undefined')?new AbortController():null;
   var timedOut=false;
-  var timer=controller?setTimeout(function(){timedOut=true;controller.abort();},25000):null;
-  fetch(APPS_SCRIPT_URL+'?action=leaderboard',{cache:'no-store',signal:controller?controller.signal:undefined}).then(function(r){
+  var timer=controller?setTimeout(function(){timedOut=true;controller.abort();},10000):null;
+  fetch(SUPABASE_URL+'/rest/v1/leaderboard?select=*&order=best.desc',{headers:supaHeaders(),cache:'no-store',signal:controller?controller.signal:undefined}).then(function(r){
     if(timer)clearTimeout(timer);
-    if(!r.ok)throw new Error('Server responded with HTTP '+r.status+'. Your Apps Script deployment may need to be redeployed as a new version.');
+    if(!r.ok)throw new Error('Server responded with HTTP '+r.status+'. Check your Supabase table/view and policies.');
     return r.json();
   }).then(function(data){
     stopLbDots();
@@ -705,7 +733,7 @@ function loadLeaderboard(){
       statusEl.textContent='Could not refresh ('+reason+'). Showing saved results from '+formatLbDate(cached.savedAt)+'.';
     }else{
       statusEl.style.display='';
-      statusEl.textContent='Could not load leaderboard: '+reason+'. If this happens only on your phone, try opening this file through a normal web link (e.g. host it online) rather than directly from your phone\'s file storage, and double-check the Apps Script is deployed with access set to "Anyone".';
+      statusEl.textContent='Could not load leaderboard: '+reason+'. Check your Supabase table/view and row-level security policies.';
       table.style.display='none';
     }
   });
