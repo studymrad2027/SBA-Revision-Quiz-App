@@ -146,17 +146,35 @@ button{font-family:Georgia,serif;cursor:pointer;}
 .lb-table td{color:var(--tx);}
 .lb-rank{font-weight:700;color:var(--gold);width:24px;}
 .lb-you{background:rgba(212,168,67,.1);}
+#progressOverview{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:8px;}
+.pg-badge-yes{font-size:9px;font-weight:700;color:#27ae60;background:rgba(39,174,96,.12);border:1px solid rgba(39,174,96,.3);padding:2px 8px;border-radius:10px;}
+.pg-badge-no{font-size:9px;font-weight:700;color:var(--grey);background:rgba(128,128,128,.1);border:1px solid rgba(128,128,128,.2);padding:2px 8px;border-radius:10px;}
+.resume-card{max-width:300px;margin:0 auto 10px;background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.3);border-radius:10px;padding:10px 13px;text-align:left;font-family:sans-serif;}
+.resume-card .rc-top{font-size:12px;color:var(--wh);font-weight:700;margin-bottom:3px;}
+.resume-card .rc-sub{font-size:11px;color:var(--grey);margin-bottom:8px;}
+.resume-card .rc-btns{display:flex;gap:8px;}
+.resume-card .rc-btns button{flex:1;border-radius:7px;padding:6px;font-size:11px;font-weight:700;font-family:sans-serif;}
+.rc-resume{background:linear-gradient(135deg,#d4a843,#b8901e);border:none;color:#0d1b2a;}
+.rc-discard{background:none;border:1px solid rgba(128,128,128,.3);color:var(--grey);}
+#examLoadingOv{display:none;position:fixed;inset:0;background:rgba(13,27,42,.85);z-index:200;align-items:center;justify-content:center;font-family:sans-serif;}
+.el-box{text-align:center;color:var(--gold);font-size:13px;font-weight:700;}
+.el-spin{width:28px;height:28px;border:3px solid rgba(212,168,67,.25);border-top-color:var(--gold);border-radius:50%;margin:0 auto 10px;animation:elspin 0.8s linear infinite;}
+@keyframes elspin{to{transform:rotate(360deg);}}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <button class="mode-btn" id="modeBtn" onclick="toggleMode()">&#9728; Light</button>
 
+<div id="examLoadingOv">
+  <div class="el-box"><div class="el-spin"></div>Loading questions...</div>
+</div>
+
 <div id="hcov">
   <div class="hc-box">
     <div class="hc-icon">&#8962;</div>
     <div class="hc-title">Return to Home?</div>
-    <div class="hc-sub">Your current progress will be lost.</div>
+    <div class="hc-sub">Your progress is saved &mdash; you can resume this set from the home screen.</div>
     <div class="hc-btns">
       <button class="hc-cancel" onclick="document.getElementById('hcov').classList.remove('show')">Cancel</button>
       <button class="hc-go" onclick="document.getElementById('hcov').classList.remove('show');goHome()">Go Home</button>
@@ -188,9 +206,10 @@ button{font-family:Georgia,serif;cursor:pointer;}
   </div>
   <div class="username-box">
     <label for="usernameInput">Your Name (for leaderboard)</label>
-    <input type="text" id="usernameInput" maxlength="24" placeholder="e.g. Ahmad" oninput="saveUsername(this.value)">
+    <input type="text" id="usernameInput" maxlength="24" placeholder="e.g. Ahmad" oninput="saveUsername(this.value)" onchange="loadSavedProgressList()">
   </div>
 
+  <div id="resumeList"></div>
   <div class="set-grid" id="setGrid"></div>
   <div class="home-btns">
     <div class="import-row">
@@ -303,7 +322,49 @@ button{font-family:Georgia,serif;cursor:pointer;}
         <tbody id="lbBody"></tbody>
       </table>
     </div>
-    <div style="margin-top:14px;"><button onclick="loadLeaderboard()" style="background:var(--bg2);border:1px solid rgba(128,128,128,.2);border-radius:8px;padding:8px 14px;color:var(--grey);font-size:12px;font-weight:700;">&#8635; Refresh</button></div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button onclick="loadLeaderboard()" style="background:var(--bg2);border:1px solid rgba(128,128,128,.2);border-radius:8px;padding:8px 14px;color:var(--grey);font-size:12px;font-weight:700;">&#8635; Refresh</button>
+      <button onclick="openProgressBoard()" style="background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.35);border-radius:8px;padding:8px 14px;color:var(--gold);font-size:12px;font-weight:700;">&#128202; Progress Board</button>
+    </div>
+  </div>
+</div>
+
+<div id="progress" class="screen">
+  <div class="rev-wrap">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
+      <button onclick="show('leaderboard')" style="background:var(--bg2);border:1px solid rgba(128,128,128,.2);border-radius:8px;padding:7px 14px;color:var(--grey);font-size:12px;font-weight:700;">&#8592; Leaderboard</button>
+      <div style="font-size:15px;font-weight:700;color:var(--wh);">&#128202; Progress Board</div>
+    </div>
+    <div class="username-box" style="max-width:none;">
+      <label for="progressUserSelect">Select a name</label>
+      <select id="progressUserSelect" onchange="loadProgressForUser(this.value)" style="width:100%;box-sizing:border-box;background:var(--bg2);border:1px solid rgba(128,128,128,.25);border-radius:8px;padding:9px 12px;color:var(--tx);font-size:13px;font-family:sans-serif;">
+        <option value="">-- Select a name --</option>
+      </select>
+    </div>
+    <div id="progressStatus" style="font-size:12px;color:var(--grey);font-family:sans-serif;margin:8px 0;"></div>
+    <div id="progressContent" style="display:none;">
+      <div class="r-grid" id="progressOverview"></div>
+      <div style="font-size:12px;font-weight:700;color:var(--wh);font-family:sans-serif;margin:16px 0 8px;">Sets</div>
+      <div style="overflow-x:auto;">
+        <table class="lb-table" id="progressSetsTable">
+          <thead><tr><th>Set</th><th>Status</th><th>Attempts</th><th>Best %</th><th>Avg %</th><th>Last Attempt</th></tr></thead>
+          <tbody id="progressSetsBody"></tbody>
+        </table>
+      </div>
+      <div id="progressOtherWrap" style="margin-top:16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--wh);font-family:sans-serif;margin-bottom:8px;">Other Modes</div>
+        <div style="overflow-x:auto;">
+          <table class="lb-table" id="progressOtherTable">
+            <thead><tr><th>Mode</th><th>Attempts</th><th>Best %</th><th>Avg %</th><th>Last Attempt</th></tr></thead>
+            <tbody id="progressOtherBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--wh);font-family:sans-serif;margin-bottom:8px;">Weakest Systems (avg across all attempts)</div>
+        <div id="progressWeak"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -415,12 +476,15 @@ function saveQuestionsToSupabase(importedQuestions){
   });
 }
 
-function addSheetQuestions(rawRows){
-  if(!rawRows||!rawRows.length)return;
-  var imported=convertExcelRows(rawRows);
-  if(!imported.length)return;
-  var groups=groupQuestionsBySet(imported);
-  groups.forEach(function(g){SETS.push(g.list);SL.push(g.label);});
+function isLazySet(x){return !!(x&&x.__lazy===true);}
+
+function applySetSummaries(summaries){
+  SETS=SETS.slice(0,BASE_SET_COUNT);
+  SL=SL.slice(0,BASE_SET_COUNT);
+  summaries.forEach(function(s){
+    SETS.push({__lazy:true,name:s.set_name,count:Number(s.question_count)||0});
+    SL.push(s.set_name);
+  });
   buildSetGrid();
 }
 
@@ -432,7 +496,7 @@ function loadPersistedQuestions(){
   }
   var cached=null;
   try{cached=JSON.parse(localStorage.getItem('sba_q_cache')||'null');}catch(e){}
-  if(cached&&cached.rows&&cached.rows.length)addSheetQuestions(cached.rows);
+  if(cached&&cached.summaries&&cached.summaries.length)applySetSummaries(cached.summaries);
   var dots=0,timer=null;
   if(statusEl){
     statusEl.textContent='Checking database for question sets';
@@ -441,13 +505,14 @@ function loadPersistedQuestions(){
       statusEl.textContent='Checking database for question sets'+'.'.repeat(dots);
     },400);
   }
-  fetch(SUPABASE_URL+'/rest/v1/questions?select=*&order=id.asc',{headers:supaHeaders(),cache:'no-store'}).then(function(r){
+  // Lightweight: just set names + counts, not full question content (see question_set_counts view)
+  fetch(SUPABASE_URL+'/rest/v1/question_set_counts?select=*',{headers:supaHeaders(),cache:'no-store'}).then(function(r){
     if(!r.ok)throw new Error('HTTP '+r.status);
     return r.json();
-  }).then(function(dbRows){
+  }).then(function(summaries){
     if(timer)clearInterval(timer);
-    var rows=(dbRows||[]).map(supaRowToExcelRow);
-    if(!rows.length){
+    summaries=summaries||[];
+    if(!summaries.length){
       SETS=SETS.slice(0,BASE_SET_COUNT);
       SL=SL.slice(0,BASE_SET_COUNT);
       buildSetGrid();
@@ -455,19 +520,53 @@ function loadPersistedQuestions(){
       if(statusEl)statusEl.textContent='No extra sets found in the database yet.';
       return;
     }
-    var cachedStr=cached&&cached.rows?JSON.stringify(cached.rows):null;
-    if(cachedStr!==JSON.stringify(rows)){
-      SETS=SETS.slice(0,BASE_SET_COUNT);
-      SL=SL.slice(0,BASE_SET_COUNT);
-      addSheetQuestions(rows);
-    }
-    var extraSets=SETS.length-BASE_SET_COUNT;
-    if(statusEl)statusEl.textContent=extraSets>0?('Loaded '+extraSets+' extra set(s) from your database ('+rows.length+' questions).'):'No extra sets found in the database yet.';
-    try{localStorage.setItem('sba_q_cache',JSON.stringify({rows:rows}));}catch(e){}
+    var cachedStr=cached&&cached.summaries?JSON.stringify(cached.summaries):null;
+    if(cachedStr!==JSON.stringify(summaries))applySetSummaries(summaries);
+    var totalQ=summaries.reduce(function(s,r){return s+(Number(r.question_count)||0);},0);
+    if(statusEl)statusEl.textContent='Loaded '+summaries.length+' extra set(s) from your database ('+totalQ+' questions, loaded on demand).';
+    try{localStorage.setItem('sba_q_cache',JSON.stringify({summaries:summaries}));}catch(e){}
   }).catch(function(err){
     if(timer)clearInterval(timer);
-    if(statusEl)statusEl.textContent='Could not check the database ('+(err&&err.message?err.message:'connection error')+'). '+(cached&&cached.rows&&cached.rows.length?'Showing sets from last successful check.':'Showing built-in sets only.');
+    if(statusEl)statusEl.textContent='Could not check the database ('+(err&&err.message?err.message:'connection error')+'). '+(cached&&cached.summaries&&cached.summaries.length?'Showing sets from last successful check.':'Showing built-in sets only.');
   });
+}
+
+function fetchFullSet(setName){
+  return fetch(SUPABASE_URL+'/rest/v1/questions?select=*&set_name=eq.'+encodeURIComponent(setName)+'&order=id.asc',{headers:supaHeaders(),cache:'no-store'})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(dbRows){return convertExcelRows((dbRows||[]).map(supaRowToExcelRow));});
+}
+
+function ensureSetLoaded(setIdx){
+  if(!isLazySet(SETS[setIdx]))return Promise.resolve(SETS[setIdx]);
+  var name=SETS[setIdx].name;
+  return fetchFullSet(name).then(function(list){
+    SETS[setIdx]=list;
+    return list;
+  });
+}
+
+function ensureAllSetsLoaded(){
+  var lazyIdx=[];
+  for(var i=0;i<SETS.length;i++)if(isLazySet(SETS[i]))lazyIdx.push(i);
+  if(!lazyIdx.length)return Promise.resolve();
+  // one request for everything still missing, rather than one request per set
+  return fetch(SUPABASE_URL+'/rest/v1/questions?select=*&order=id.asc',{headers:supaHeaders(),cache:'no-store'})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(dbRows){
+      var byName={};
+      convertExcelRows((dbRows||[]).map(supaRowToExcelRow)).forEach(function(q){
+        var key=q.set||'1';
+        if(!byName[key])byName[key]=[];
+        byName[key].push(q);
+      });
+      lazyIdx.forEach(function(i){SETS[i]=byName[SETS[i].name]||[];});
+    });
+}
+
+function showExamLoading(show){
+  var el=document.getElementById('examLoadingOv');
+  if(el)el.style.display=show?'flex':'none';
 }
 
 function downloadTemplate(){
@@ -550,7 +649,7 @@ function seedShuffle(arr,seed){
 // Mixed set: combine all 500 and take first 100 after shuffling
 function getMixed(seed){
   var all=[];
-  for(var i=0;i<SETS.length;i++) all=all.concat(SETS[i]);
+  for(var i=0;i<SETS.length;i++) all=all.concat(Array.isArray(SETS[i])?SETS[i]:[]);
   return seedShuffle(all,seed).slice(0,100);
 }
 
@@ -638,6 +737,156 @@ function submitResultOnline(record){
     if(savingTimer)clearInterval(savingTimer);
     if(statusEl)statusEl.textContent='Could not reach leaderboard (saved on this device only).';
   });
+}
+
+function openProgressBoard(){
+  show('progress');
+  document.getElementById('progressContent').style.display='none';
+  document.getElementById('progressStatus').textContent='';
+  populateProgressUserDropdown();
+}
+
+function populateProgressUserDropdown(){
+  var sel=document.getElementById('progressUserSelect');
+  var keepValue=sel.value;
+  if(!supaReady()){
+    sel.innerHTML='<option value="">Leaderboard not set up yet</option>';
+    return;
+  }
+  sel.innerHTML='<option value="">Loading names...</option>';
+  fetch(SUPABASE_URL+'/rest/v1/leaderboard?select=name&order=name.asc',{headers:supaHeaders(),cache:'no-store'}).then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(function(list){
+    if(!list||!list.length){
+      sel.innerHTML='<option value="">No names yet \u2014 submit a result first</option>';
+      return;
+    }
+    sel.innerHTML='<option value="">-- Select a name --</option>'+list.map(function(u){
+      var n=String(u.name||'');
+      return '<option value="'+escTP(n)+'">'+escTP(n)+'</option>';
+    }).join('');
+    if(keepValue){sel.value=keepValue;if(sel.value===keepValue)loadProgressForUser(keepValue);}
+  }).catch(function(){
+    sel.innerHTML='<option value="">Could not load names</option>';
+  });
+}
+
+function loadProgressForUser(name){
+  var statusEl=document.getElementById('progressStatus');
+  var content=document.getElementById('progressContent');
+  if(!name){content.style.display='none';statusEl.textContent='';return;}
+  content.style.display='none';
+  statusEl.textContent='Loading progress for '+name+'...';
+  fetch(SUPABASE_URL+'/rest/v1/results?username=eq.'+encodeURIComponent(name)+'&select=*&order=created_at.asc',{headers:supaHeaders(),cache:'no-store'}).then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(function(rows){
+    if(!rows||!rows.length){
+      statusEl.textContent='No completed attempts found for '+name+' yet.';
+      return;
+    }
+    statusEl.textContent='';
+    content.style.display='';
+    renderProgress(rows);
+  }).catch(function(err){
+    statusEl.textContent='Could not load progress: '+(err&&err.message?err.message:'connection error');
+  });
+}
+
+function renderProgress(rows){
+  var knownSets=SL.slice();
+  var setBuckets={};
+  knownSets.forEach(function(s){setBuckets[s]=[];});
+  var otherBuckets={'Full Exam':[],'Timed Mode':[],'Redo Wrong':[]};
+  rows.forEach(function(r){
+    var label=String(r.set_label||'');
+    if(r.mode==='timed')otherBuckets['Timed Mode'].push(r);
+    else if(r.mode==='wrong')otherBuckets['Redo Wrong'].push(r);
+    else if(label==='Full Exam')otherBuckets['Full Exam'].push(r);
+    else if(setBuckets.hasOwnProperty(label))setBuckets[label].push(r);
+    else{
+      // a set that existed before but isn't currently loaded in this session \u2014 still show it
+      if(!setBuckets[label])setBuckets[label]=[];
+      setBuckets[label].push(r);
+    }
+  });
+
+  function summarize(list){
+    if(!list.length)return null;
+    var best=0,sum=0,last=list[0].created_at,bestScore=list[0].score,bestTotal=list[0].total;
+    list.forEach(function(r){
+      var pct=Number(r.percent)||0;
+      sum+=pct;
+      if(pct>=best){best=pct;bestScore=r.score;bestTotal=r.total;}
+      if(new Date(r.created_at)>new Date(last))last=r.created_at;
+    });
+    return {attempts:list.length,best:best,avg:Math.round(sum/list.length),last:last,bestScore:bestScore,bestTotal:bestTotal};
+  }
+
+  // overview
+  var attemptedSets=Object.keys(setBuckets).filter(function(k){return setBuckets[k].length>0;});
+  var totalQuestionsAnswered=rows.reduce(function(sum,r){return sum+(Number(r.total)||0);},0);
+  var overallAvg=rows.length?Math.round(rows.reduce(function(s,r){return s+(Number(r.percent)||0);},0)/rows.length):0;
+  var lastActive=rows.reduce(function(l,r){return new Date(r.created_at)>new Date(l)?r.created_at:l;},rows[0].created_at);
+  var ov=document.getElementById('progressOverview');
+  ov.innerHTML=
+    '<div class="r-card"><div class="r-num" style="color:var(--gold)">'+attemptedSets.length+'/'+knownSets.length+'</div><div class="r-lbl">Sets Attempted</div></div>'+
+    '<div class="r-card"><div class="r-num" style="color:var(--gold)">'+totalQuestionsAnswered+'</div><div class="r-lbl">Questions Answered</div></div>'+
+    '<div class="r-card"><div class="r-num" style="color:var(--gold)">'+overallAvg+'%</div><div class="r-lbl">Overall Average</div></div>'+
+    '<div class="r-card"><div class="r-num" style="color:var(--gold);font-size:13px;">'+formatLbDate(lastActive)+'</div><div class="r-lbl">Last Active</div></div>';
+
+  // per-set table
+  var setsBody=document.getElementById('progressSetsBody');
+  setsBody.innerHTML='';
+  Object.keys(setBuckets).forEach(function(setName){
+    var sum=summarize(setBuckets[setName]);
+    var tr=document.createElement('tr');
+    if(sum){
+      tr.innerHTML='<td>'+setName+'</td><td><span class="pg-badge-yes">Done</span></td><td>'+sum.attempts+'</td><td>'+sum.best+'%</td><td>'+sum.avg+'%</td><td>'+formatLbDate(sum.last)+'</td>';
+    }else{
+      tr.innerHTML='<td>'+setName+'</td><td><span class="pg-badge-no">Not started</span></td><td>-</td><td>-</td><td>-</td><td>-</td>';
+    }
+    setsBody.appendChild(tr);
+  });
+
+  // other modes table
+  var otherBody=document.getElementById('progressOtherBody');
+  otherBody.innerHTML='';
+  var anyOther=false;
+  Object.keys(otherBuckets).forEach(function(modeName){
+    var sum=summarize(otherBuckets[modeName]);
+    if(!sum)return;
+    anyOther=true;
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+modeName+'</td><td>'+sum.attempts+'</td><td>'+sum.best+'%</td><td>'+sum.avg+'%</td><td>'+formatLbDate(sum.last)+'</td>';
+    otherBody.appendChild(tr);
+  });
+  document.getElementById('progressOtherWrap').style.display=anyOther?'':'none';
+
+  // weakest systems across every attempt
+  var sysSum={},sysCount={};
+  rows.forEach(function(r){
+    var bd=r.system_breakdown;
+    if(bd&&typeof bd==='object'){
+      Object.keys(bd).forEach(function(sysName){
+        var v=Number(bd[sysName]);
+        if(isNaN(v))return;
+        sysSum[sysName]=(sysSum[sysName]||0)+v;
+        sysCount[sysName]=(sysCount[sysName]||0)+1;
+      });
+    }
+  });
+  var sysAvgs=Object.keys(sysSum).map(function(k){return {name:k,avg:Math.round(sysSum[k]/sysCount[k])};}).sort(function(a,b){return a.avg-b.avg;});
+  var weakEl=document.getElementById('progressWeak');
+  if(!sysAvgs.length){
+    weakEl.innerHTML='<div style="font-size:12px;color:var(--grey);font-family:sans-serif;">No per-system data recorded yet.</div>';
+  }else{
+    weakEl.innerHTML=sysAvgs.slice(0,8).map(function(s){
+      var barCol=s.avg>=80?'#27ae60':s.avg>=60?'#d4a843':'#e74c3c';
+      return '<div class="sys-row"><span class="sys-nm">'+s.name+'</span><div class="sys-bw"><div class="sys-b" style="width:'+s.avg+'%;background:'+barCol+'"></div></div><span class="sys-p" style="color:'+barCol+'">'+s.avg+'%</span></div>';
+    }).join('');
+  }
 }
 
 function openLeaderboard(){
@@ -752,11 +1001,89 @@ function buildSetGrid(){
   for(var i=0;i<SETS.length;i++){
     (function(idx){
       var d=document.createElement('button');d.className='set-card';
-      d.innerHTML='<div class="sc-n">'+(idx+1)+'</div><div class="sc-l">'+(SL[idx]||('Set '+(idx+1)))+'</div><div class="sc-t">'+SETS[idx].length+' Questions</div>';
+      var qCount=isLazySet(SETS[idx])?SETS[idx].count:SETS[idx].length;
+      d.innerHTML='<div class="sc-n">'+(idx+1)+'</div><div class="sc-l">'+(SL[idx]||('Set '+(idx+1)))+'</div><div class="sc-t">'+qCount+' Questions</div>';
       d.onclick=function(){startExam('normal',idx);};g.appendChild(d);
     })(i);
   }
   document.getElementById('wrongBtn').style.display=wrongBank.length>0?'':'none';
+}
+
+function progressKey(m,label){return m==='wrong'?'wrong':label;}
+
+var progressSaveTimer=null;
+function saveProgressDebounced(){
+  if(!qs||!qs.length)return;
+  clearTimeout(progressSaveTimer);
+  progressSaveTimer=setTimeout(saveProgressNow,500);
+}
+function saveProgressNow(){
+  if(!supaReady()||!qs||!qs.length)return;
+  var username=getUsername();
+  if(!username||username==='Anonymous')return;
+  var payload={username:username,set_key:progressKey(mode,lbl),set_label:lbl,mode:mode,qs:qs,ans:ans,cur:cur,updated_at:new Date().toISOString()};
+  fetch(SUPABASE_URL+'/rest/v1/progress?on_conflict=username,set_key',{
+    method:'POST',
+    headers:supaHeaders({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify(payload)
+  }).catch(function(){});
+}
+function deleteProgress(key){
+  if(!supaReady())return;
+  var username=getUsername();
+  if(!username)return;
+  fetch(SUPABASE_URL+'/rest/v1/progress?username=eq.'+encodeURIComponent(username)+'&set_key=eq.'+encodeURIComponent(key),{
+    method:'DELETE',
+    headers:supaHeaders()
+  }).catch(function(){});
+}
+
+function loadSavedProgressList(){
+  var wrap=document.getElementById('resumeList');
+  if(!wrap)return;
+  var username=getUsername();
+  if(!supaReady()||!username||username==='Anonymous'){wrap.innerHTML='';return;}
+  fetch(SUPABASE_URL+'/rest/v1/progress?username=eq.'+encodeURIComponent(username)+'&select=*&order=updated_at.desc',{headers:supaHeaders(),cache:'no-store'}).then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(function(rows){
+    renderResumeBanners(rows||[]);
+  }).catch(function(){wrap.innerHTML='';});
+}
+
+function renderResumeBanners(rows){
+  var wrap=document.getElementById('resumeList');
+  if(!rows.length){wrap.innerHTML='';return;}
+  wrap.innerHTML=rows.map(function(row,i){
+    var total=(row.qs||[]).length;
+    var answered=(row.cur||0)+1;
+    return '<div class="resume-card">'+
+      '<div class="rc-top">Resume: '+escTP(row.set_label||row.set_key)+'</div>'+
+      '<div class="rc-sub">Question '+Math.min(answered,total)+' of '+total+'</div>'+
+      '<div class="rc-btns">'+
+        '<button class="rc-resume" onclick="resumeProgressByIndex('+i+')">Resume</button>'+
+        '<button class="rc-discard" onclick="discardProgressByIndex('+i+')">Discard</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  window._resumeRows=rows;
+}
+
+function resumeProgressByIndex(i){
+  var row=(window._resumeRows||[])[i];
+  if(!row)return;
+  mode=row.mode;lbl=row.set_label;qs=row.qs;ans=row.ans;cur=row.cur||0;hintShown=false;
+  document.getElementById('hLbl').textContent=lbl;
+  document.getElementById('timerWrap').style.display=mode==='timed'?'flex':'none';
+  buildDots();show('exam');renderQ();
+}
+
+function discardProgressByIndex(i){
+  var row=(window._resumeRows||[])[i];
+  if(!row)return;
+  deleteProgress(row.set_key);
+  window._resumeRows.splice(i,1);
+  renderResumeBanners(window._resumeRows);
 }
 
 function startExam(m,setIdx){
@@ -772,17 +1099,42 @@ function startExam(m,setIdx){
   if(m==='wrong'){
     if(wrongBank.length===0){alert('No wrong answers yet!');return;}
     qs=wrongBank.slice();lbl='Redo Wrong ('+qs.length+')';
+    beginExamNow();
   } else if(setIdx===-1){
-    var seed=m==='timed'?77:55;
-    qs=getMixed(seed);
     lbl=m==='timed'?'Timed Mode':'Full Exam';
+    showExamLoading(true);
+    ensureAllSetsLoaded().then(function(){
+      showExamLoading(false);
+      var seed=m==='timed'?77:55;
+      qs=getMixed(seed);
+      beginExamNow();
+    }).catch(function(){
+      showExamLoading(false);
+      alert('Could not load all question sets. Check your connection and try again.');
+    });
   } else {
-    qs=SETS[setIdx].slice();
     lbl=SL[setIdx];
+    if(isLazySet(SETS[setIdx])){
+      showExamLoading(true);
+      ensureSetLoaded(setIdx).then(function(list){
+        showExamLoading(false);
+        qs=list.slice();
+        beginExamNow();
+      }).catch(function(){
+        showExamLoading(false);
+        alert('Could not load this set. Check your connection and try again.');
+      });
+    } else {
+      qs=SETS[setIdx].slice();
+      beginExamNow();
+    }
   }
+}
+
+function beginExamNow(){
   ans=new Array(qs.length).fill(null);cur=0;hintShown=false;
   document.getElementById('hLbl').textContent=lbl;
-  document.getElementById('timerWrap').style.display=m==='timed'?'flex':'none';
+  document.getElementById('timerWrap').style.display=mode==='timed'?'flex':'none';
   buildDots();show('exam');renderQ();
 }
 
@@ -874,6 +1226,7 @@ function renderQ(){
   }
   buildNav(isA);
   if(mode==='timed'&&!isA){timeLeft=30;startTimer();}
+  saveProgressDebounced();
 }
 
 function toggleHint(){
@@ -936,6 +1289,7 @@ function dismissTimeup(){
 
 function finishExam(){
   stopTimer();
+  deleteProgress(progressKey(mode,lbl));
   wrongBank=qs.filter(function(q,i){return ans[i]!==null&&ans[i]!=='SKIP'&&ans[i]!=='TIMEUP'&&ans[i]!==q.a;});
   var tot=qs.length,ok=0,wr=0,sk=0;
   ans.forEach(function(a,i){if(a===qs[i].a)ok++;else if(a==='SKIP'||a==='TIMEUP')sk++;else if(a!==null)wr++;});
@@ -1017,10 +1371,11 @@ function showReview(){
   show('review');
 }
 
-function goHome(){stopTimer();document.getElementById('timeup-ov').classList.remove('show');buildSetGrid();show('home');}
+function goHome(){stopTimer();document.getElementById('timeup-ov').classList.remove('show');buildSetGrid();show('home');loadSavedProgressList();}
 buildSetGrid();
 loadUsernameField();
 loadPersistedQuestions();
+loadSavedProgressList();
 </script>
 </body>
 </html>
