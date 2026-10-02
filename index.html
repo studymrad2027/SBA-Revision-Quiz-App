@@ -1206,7 +1206,7 @@ function renderQ(){
   else eb.className='exp-box';
   var kb=document.getElementById('kpBox');
   var kpText=(q.kp&&String(q.kp).trim())?String(q.kp).trim():'';
-  document.getElementById('kpTxt').textContent=kpText;
+  document.getElementById('kpTxt').innerHTML=kpText;
   kb.className=(isA&&kpText)?'kp-box show':'kp-box';
   // Score banner when all answered
   var existBanner=document.getElementById('scoreBanner');
