@@ -131,6 +131,24 @@ button{font-family:Georgia,serif;cursor:pointer;}
 .tu-sub{font-size:13px;color:var(--grey);margin-bottom:16px;font-family:sans-serif;line-height:1.5;}
 .tu-next{background:linear-gradient(135deg,#d4a843,#b8901e);border:none;border-radius:8px;padding:10px 24px;color:#0d1b2a;font-size:13px;font-weight:800;}
 
+.cd-wrap{width:100%;max-width:340px;margin:0 auto 14px;text-align:center;}
+.cd-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;perspective:400px;}
+.cd-bk{background:var(--bg2);border:1px solid rgba(212,168,67,.3);border-radius:8px;position:relative;overflow:hidden;padding:7px 2px 5px;}
+.cd-bk:after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.35);}
+.cd-n{font-family:monospace;font-size:26px;font-weight:700;color:var(--gold);line-height:1.1;position:relative;z-index:1;}
+.cd-n.flip{animation:cdflip .4s ease-out;}
+@keyframes cdflip{0%{transform:rotateX(-90deg);opacity:.2;}100%{transform:rotateX(0);opacity:1;}}
+.cd-l{font-family:sans-serif;font-size:10px;color:var(--grey);margin-top:2px;}
+.cd-msg{font-family:sans-serif;font-size:11px;color:var(--grey);margin-top:8px;}
+.cd-msg.go{color:var(--gold);font-size:13px;font-weight:700;}
+.set-card.done,.grp-card.done{border-color:#27ae60;background:rgba(39,174,96,.14);}
+.grp-card.part{border-color:rgba(39,174,96,.55);background:rgba(39,174,96,.06);}
+.sc-d{font-size:10px;color:#27ae60;font-weight:700;margin-top:3px;font-family:sans-serif;}
+.opt{position:relative;}
+.opt.kb{outline:2px solid var(--gold);outline-offset:1px;background:rgba(212,168,67,.1);}
+.opt.kb:after{content:"\25B6";position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:11px;}
+.kb-hint{display:none;margin-top:12px;font-size:11px;color:var(--grey);font-family:sans-serif;text-align:center;line-height:1.6;}
+@media (hover:hover) and (pointer:fine){.kb-hint{display:block;}}
 .set-card,.grp-card{position:relative;}
 .pen{position:absolute;top:2px;right:3px;font-size:13px;line-height:1;padding:4px 6px;background:rgba(212,168,67,.25);color:var(--gold);border-radius:6px;}
 .btn-edit{background:var(--bg2);border:1px solid rgba(212,168,67,.4);border-radius:10px;padding:9px;color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;width:100%;max-width:300px;margin-bottom:10px;}
@@ -146,6 +164,8 @@ button{font-family:Georgia,serif;cursor:pointer;}
 .btn-import:active{transform:scale(.98);}
 .import-row{display:flex;gap:8px;align-items:stretch;width:100%;max-width:300px;margin-bottom:10px;}
 .import-row .btn-import{flex:1;width:auto;max-width:none;margin-bottom:0;}
+.import-row.locked .btn-import{display:none;}
+.import-row.locked .btn-template{flex:1;font-size:12px;padding:9px;}
 .btn-template{flex:0 0 84px;background:var(--bg2);border:1px solid #2878c8;border-radius:10px;padding:6px 6px;color:#5aa2e6;font-size:9.5px;font-weight:700;line-height:1.25;cursor:pointer;}
 .btn-template:active{transform:scale(.98);}
 .btn-board{background:linear-gradient(135deg,#27ae60,#166a3a);border:none;border-radius:10px;padding:11px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;width:100%;max-width:300px;margin-bottom:10px;}
@@ -209,6 +229,15 @@ button{font-family:Georgia,serif;cursor:pointer;}
 <div id="home" class="screen active">
   <div class="logo">Backbencher SBA Revision Edited</div>
   <div class="logo-sub">inspired by Dr Ram</div>
+  <div class="cd-wrap">
+    <div class="cd-row" id="cdRow">
+      <div class="cd-bk"><div class="cd-n" data-u="d">0</div><div class="cd-l">Days</div></div>
+      <div class="cd-bk"><div class="cd-n" data-u="h">00</div><div class="cd-l">Hours</div></div>
+      <div class="cd-bk"><div class="cd-n" data-u="m">00</div><div class="cd-l">Min</div></div>
+      <div class="cd-bk"><div class="cd-n" data-u="s">00</div><div class="cd-l">Sec</div></div>
+    </div>
+    <div class="cd-msg" id="cdMsg">until exam day, 27 Oct 2026</div>
+  </div>
   <div id="quoteBox" style="max-width:340px;margin:0 auto 14px;padding:12px 16px;border-left:3px solid #d4a843;text-align:left;">
     <div id="quoteText" style="font-size:13px;color:var(--tx);line-height:1.6;font-style:italic;"></div>
     <div id="quoteAuthor" style="font-size:10px;color:var(--grey);margin-top:6px;letter-spacing:1px;text-transform:uppercase;font-family:sans-serif;"></div>
@@ -227,17 +256,17 @@ button{font-family:Georgia,serif;cursor:pointer;}
   <div id="resumeList"></div>
   <div class="set-grid" id="setGrid"></div>
   <div class="home-btns">
-    <div class="import-row">
+    <button class="btn-timed" onclick="startExam('timed',-1)">&#9201; Timed Mode &mdash; 30 Seconds Per Question</button>
+    <button class="btn-full" onclick="startExam('normal',-1)">&#9654; Full Exam &mdash; Mixed 100 Questions</button>
+    <button class="btn-wrong" id="wrongBtn" onclick="startExam('wrong',-1)">&#8629; Redo Wrong Answers</button>
+    <button class="btn-board" onclick="openLeaderboard()">&#127942; Leaderboard</button>
+    <div class="import-row locked" id="importRow">
       <button class="btn-import" onclick="document.getElementById('excelInput').click()">&#128228; Import Excel Questions</button>
       <button class="btn-template" onclick="downloadTemplate()">&#11015; Download Excel Template</button>
     </div>
     <div class="sync-status" id="importStatus"></div>
     <div class="sync-status" id="sheetSetsStatus"></div>
     <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)">
-    <button class="btn-timed" onclick="startExam('timed',-1)">&#9201; Timed Mode &mdash; 30 Seconds Per Question</button>
-    <button class="btn-full" onclick="startExam('normal',-1)">&#9654; Full Exam &mdash; Mixed 100 Questions</button>
-    <button class="btn-wrong" id="wrongBtn" onclick="startExam('wrong',-1)">&#8629; Redo Wrong Answers</button>
-    <button class="btn-board" onclick="openLeaderboard()">&#127942; Leaderboard</button>
     <button class="btn-edit" id="editBtn" onclick="toggleEditMode()">&#9998; Edit Titles (PIN)</button>
   </div>
   <div class="home-hint">100 unique questions per set &middot; 8 systems &middot; Referenced from standard textbooks</div>
@@ -287,6 +316,7 @@ button{font-family:Georgia,serif;cursor:pointer;}
       <div class="kp-txt" id="kpTxt"></div>
     </div>
     <div class="nav" id="navRow"></div>
+    <div class="kb-hint">&#8593; &#8595; choose &middot; Enter select / next &middot; A&ndash;E answer &middot; &#8592; &#8594; back / next &middot; S skip &middot; H hint</div>
   </div>
 </div>
 
@@ -749,6 +779,7 @@ function toggleMode(){
 
 function saveUsername(v){
   try{localStorage.setItem('sba_username',v.trim());}catch(e){}
+  clearTimeout(doneTimer);doneTimer=setTimeout(refreshDone,600);
   var nameEl=document.getElementById('usernameInput');
   if(nameEl&&v.trim())nameEl.style.borderColor='';
 }
@@ -1065,6 +1096,29 @@ function show(id){
   mb.style.display=(id==='exam')?'none':'';
 }
 
+var DONE={},doneTimer=null,doneReq=0;
+function doneOf(idx){
+  var l=SL[idx];
+  return Object.prototype.hasOwnProperty.call(DONE,l)?DONE[l]:null;
+}
+function refreshDone(){
+  var el=document.getElementById('usernameInput');
+  var name=el?el.value.trim():'';
+  var req=++doneReq;
+  if(!name||!supaReady()){DONE={};buildSetGrid();return;}
+  fetch(SUPABASE_URL+'/rest/v1/results?username=eq.'+encodeURIComponent(name)+'&mode=eq.normal&select=set_label,percent',{headers:supaHeaders(),cache:'no-store'})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(rows){
+      if(req!==doneReq)return;
+      var m={};
+      (rows||[]).forEach(function(r){
+        var p=Number(r.percent)||0;
+        if(!Object.prototype.hasOwnProperty.call(m,r.set_label)||p>m[r.set_label])m[r.set_label]=p;
+      });
+      DONE=m;
+      buildSetGrid();
+    }).catch(function(){});
+}
 function buildSetGrid(){
   var g=document.getElementById('setGrid');g.innerHTML='';
   var doneBooks={};
@@ -1077,13 +1131,15 @@ function buildSetGrid(){
         doneBooks[k]=true;
         var members=[],tq=0;
         for(var m=0;m<SETS.length;m++)if(bookKey(SB[m])===k){members.push(m);tq+=setQCount(m);}
-        var c=document.createElement('button');c.className='grp-card';
-        c.innerHTML='<div class="sc-n">&#128218;</div><div class="sc-l">'+escTP(b)+'</div><div class="sc-t">'+members.length+' Sets &middot; '+tq+' Q</div>';
+        var dn=members.filter(function(m){return doneOf(m)!==null;}).length;
+        var c=document.createElement('button');c.className='grp-card'+(dn===members.length?' done':(dn?' part':''));
+        c.innerHTML='<div class="sc-n">&#128218;</div><div class="sc-l">'+escTP(b)+'</div><div class="sc-t">'+members.length+' Sets &middot; '+tq+' Q</div>'+(dn?'<div class="sc-d">&#10003; '+dn+'/'+members.length+' done</div>':'');
         c.onclick=function(){openGroup(k);};addPen(c,function(){renameGroup(k);});g.appendChild(c);
         return;
       }
-      var d=document.createElement('button');d.className='set-card';
-      d.innerHTML='<div class="sc-n">'+(idx+1)+'</div><div class="sc-l">'+escTP(SL[idx]||('Set '+(idx+1)))+'</div><div class="sc-t">'+setQCount(idx)+' Questions</div>';
+      var dp=doneOf(idx);
+      var d=document.createElement('button');d.className='set-card'+(dp!==null?' done':'');
+      d.innerHTML='<div class="sc-n">'+(idx+1)+'</div><div class="sc-l">'+escTP(SL[idx]||('Set '+(idx+1)))+'</div><div class="sc-t">'+setQCount(idx)+' Questions</div>'+(dp!==null?'<div class="sc-d">&#10003; Done &middot; '+dp+'%</div>':'');
       d.onclick=function(){startExam('normal',idx);};if(idx>=BASE_SET_COUNT)addPen(d,function(){renameSet(idx);});g.appendChild(d);
     })(i);
   }
@@ -1097,8 +1153,9 @@ function openGroup(k){
     if(bookKey(SB[i])!==k)continue;
     if(!title)title=normBook(SB[i]);
     (function(idx){
-      var d=document.createElement('button');d.className='set-card';
-      d.innerHTML='<div class="sc-l" style="font-size:11px;color:var(--gold);font-weight:700;margin:4px 0;">'+escTP(setDisplayName(idx))+'</div><div class="sc-t">'+setQCount(idx)+' Questions</div>';
+      var dq=doneOf(idx);
+      var d=document.createElement('button');d.className='set-card'+(dq!==null?' done':'');
+      d.innerHTML='<div class="sc-l" style="font-size:11px;color:var(--gold);font-weight:700;margin:4px 0;">'+escTP(setDisplayName(idx))+'</div><div class="sc-t">'+setQCount(idx)+' Questions</div>'+(dq!==null?'<div class="sc-d">&#10003; Done &middot; '+dq+'%</div>':'');
       d.onclick=function(){closeGroup();startExam('normal',idx);};addPen(d,function(){renameSet(idx,k);});grid.appendChild(d);
     })(i);
   }
@@ -1121,6 +1178,7 @@ function toggleEditMode(){
     if(p.trim()!==EDIT_PIN){alert('Wrong PIN.');return;}
     editMode=true;
   }else editMode=false;
+  document.getElementById('importRow').classList.toggle('locked',!editMode);
   document.getElementById('editBtn').innerHTML=editMode?'&#10003; Done Editing':'&#9998; Edit Titles (PIN)';
   buildSetGrid();
 }
@@ -1340,8 +1398,10 @@ function updateAllDots(){
   }
 }
 
+var kbIdx=-1;
 function renderQ(){
   stopTimer();
+  kbIdx=-1;
   var q=qs[cur],tot=qs.length;
   var done=ans.filter(function(a){return a!==null&&a!=='SKIP'&&a!=='TIMEUP';}).length;
   var ok=ans.filter(function(a,i){return a===qs[i].a;}).length;
@@ -1411,6 +1471,45 @@ function renderQ(){
   saveProgressDebounced();
 }
 
+function kbShow(){
+  var els=document.querySelectorAll('#optsList .opt');
+  els.forEach(function(el,i){el.classList.toggle('kb',i===kbIdx);});
+  if(els[kbIdx])els[kbIdx].scrollIntoView({block:'nearest'});
+}
+document.addEventListener('keydown',function(e){
+  if(e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
+  var t=e.target;
+  if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;
+  if(!document.getElementById('exam').classList.contains('active'))return;
+  if(document.getElementById('hcov').classList.contains('show'))return;
+  var k=e.key;
+  if(document.getElementById('timeup-ov').classList.contains('show')){
+    if(k==='Enter'){e.preventDefault();dismissTimeup();}
+    return;
+  }
+  if(!qs||!qs.length)return;
+  var q=qs[cur],n=q.o.length,timed=(mode==='timed');
+  if(ans[cur]===null){
+    var letters='ABCDE',pickIdx=-1;
+    if(k==='ArrowDown'){e.preventDefault();kbIdx=(kbIdx+1)%n;kbShow();return;}
+    if(k==='ArrowUp'){e.preventDefault();kbIdx=kbIdx<=0?n-1:kbIdx-1;kbShow();return;}
+    if(k==='Enter'){e.preventDefault();if(kbIdx>=0)pick(q.o[kbIdx][0]);return;}
+    if(k.length===1){
+      var ci=letters.indexOf(k.toUpperCase());
+      if(ci===-1&&k>='1'&&k<='5')ci=Number(k)-1;
+      if(ci>=0&&ci<n){e.preventDefault();pick(q.o[ci][0]);return;}
+      if(k.toLowerCase()==='s'&&!timed){e.preventDefault();skipQ();return;}
+      if(k.toLowerCase()==='h'&&q.hint&&String(q.hint).trim()){e.preventDefault();toggleHint();return;}
+    }
+  }else if(!timed){
+    if(k==='ArrowRight'||k==='Enter'){
+      e.preventDefault();
+      if(cur<qs.length-1)nextQ();else finishExam();
+      return;
+    }
+    if(k==='ArrowLeft'){e.preventDefault();prevQ();return;}
+  }
+});
 function toggleHint(){
   hintShown=!hintShown;
   document.getElementById('hintBox').className='hint-box'+(hintShown?' show':'');
@@ -1528,6 +1627,7 @@ function finishExam(){
     percent:pct,
     systemBreakdown:sysBreakdown
   };
+  if(mode==='normal'&&supaReady()&&(DONE[lbl]===undefined||pct>DONE[lbl]))DONE[lbl]=pct;
   saveResultLocally(resultRecord);
   submitResultOnline(resultRecord);
   show('results');
@@ -1553,9 +1653,35 @@ function showReview(){
   show('review');
 }
 
+var EXAM_DATE=new Date(2026,9,27,0,0,0).getTime();
+function initCountdown(){
+  var nodes=document.querySelectorAll('#cdRow [data-u]');
+  var msg=document.getElementById('cdMsg');
+  var first=true;
+  function tick(){
+    var diff=EXAM_DATE-Date.now();
+    var sec=Math.floor(Math.max(0,diff)/1000);
+    var v={d:Math.floor(sec/86400),h:Math.floor(sec%86400/3600),m:Math.floor(sec%3600/60),s:sec%60};
+    nodes.forEach(function(el){
+      var k=el.getAttribute('data-u');
+      var t=k==='d'?String(v.d):(v[k]<10?'0':'')+v[k];
+      if(el.textContent!==t){
+        el.textContent=t;
+        if(!first){el.classList.remove('flip');void el.offsetWidth;el.classList.add('flip');}
+      }
+    });
+    if(diff<=0){msg.textContent='Exam Day, Good Luck guys!';msg.className='cd-msg go';}
+    else{msg.textContent='until exam day, 27 Oct 2026';msg.className='cd-msg';}
+    first=false;
+  }
+  tick();
+  setInterval(tick,1000);
+}
 function goHome(){stopTimer();document.getElementById('timeup-ov').classList.remove('show');buildSetGrid();show('home');loadSavedProgressList();}
 buildSetGrid();
+initCountdown();
 loadUsernameField();
+refreshDone();
 loadPersistedQuestions();
 loadSavedProgressList();
 </script>
