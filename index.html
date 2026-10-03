@@ -131,6 +131,9 @@ button{font-family:Georgia,serif;cursor:pointer;}
 .tu-sub{font-size:13px;color:var(--grey);margin-bottom:16px;font-family:sans-serif;line-height:1.5;}
 .tu-next{background:linear-gradient(135deg,#d4a843,#b8901e);border:none;border-radius:8px;padding:10px 24px;color:#0d1b2a;font-size:13px;font-weight:800;}
 
+.set-card,.grp-card{position:relative;}
+.pen{position:absolute;top:2px;right:3px;font-size:13px;line-height:1;padding:4px 6px;background:rgba(212,168,67,.25);color:var(--gold);border-radius:6px;}
+.btn-edit{background:var(--bg2);border:1px solid rgba(212,168,67,.4);border-radius:10px;padding:9px;color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;width:100%;max-width:300px;margin-bottom:10px;}
 .grp-card{background:var(--bg2);border:1px solid var(--gold);border-radius:9px;padding:11px 4px;text-align:center;}
 .grp-card:active{background:var(--bg3);}
 #groupOv{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:250;align-items:center;justify-content:center;padding:16px;}
@@ -235,6 +238,7 @@ button{font-family:Georgia,serif;cursor:pointer;}
     <button class="btn-full" onclick="startExam('normal',-1)">&#9654; Full Exam &mdash; Mixed 100 Questions</button>
     <button class="btn-wrong" id="wrongBtn" onclick="startExam('wrong',-1)">&#8629; Redo Wrong Answers</button>
     <button class="btn-board" onclick="openLeaderboard()">&#127942; Leaderboard</button>
+    <button class="btn-edit" id="editBtn" onclick="toggleEditMode()">&#9998; Edit Titles (PIN)</button>
   </div>
   <div class="home-hint">100 unique questions per set &middot; 8 systems &middot; Referenced from standard textbooks</div>
 </div>
@@ -1075,12 +1079,12 @@ function buildSetGrid(){
         for(var m=0;m<SETS.length;m++)if(bookKey(SB[m])===k){members.push(m);tq+=setQCount(m);}
         var c=document.createElement('button');c.className='grp-card';
         c.innerHTML='<div class="sc-n">&#128218;</div><div class="sc-l">'+escTP(b)+'</div><div class="sc-t">'+members.length+' Sets &middot; '+tq+' Q</div>';
-        c.onclick=function(){openGroup(k);};g.appendChild(c);
+        c.onclick=function(){openGroup(k);};addPen(c,function(){renameGroup(k);});g.appendChild(c);
         return;
       }
       var d=document.createElement('button');d.className='set-card';
       d.innerHTML='<div class="sc-n">'+(idx+1)+'</div><div class="sc-l">'+escTP(SL[idx]||('Set '+(idx+1)))+'</div><div class="sc-t">'+setQCount(idx)+' Questions</div>';
-      d.onclick=function(){startExam('normal',idx);};g.appendChild(d);
+      d.onclick=function(){startExam('normal',idx);};if(idx>=BASE_SET_COUNT)addPen(d,function(){renameSet(idx);});g.appendChild(d);
     })(i);
   }
   document.getElementById('wrongBtn').style.display=wrongBank.length>0?'':'none';
@@ -1095,11 +1099,95 @@ function openGroup(k){
     (function(idx){
       var d=document.createElement('button');d.className='set-card';
       d.innerHTML='<div class="sc-l" style="font-size:11px;color:var(--gold);font-weight:700;margin:4px 0;">'+escTP(setDisplayName(idx))+'</div><div class="sc-t">'+setQCount(idx)+' Questions</div>';
-      d.onclick=function(){closeGroup();startExam('normal',idx);};grid.appendChild(d);
+      d.onclick=function(){closeGroup();startExam('normal',idx);};addPen(d,function(){renameSet(idx,k);});grid.appendChild(d);
     })(i);
   }
-  document.getElementById('goTitle').textContent=title;
+  var gt=document.getElementById('goTitle');gt.textContent=title;gt.style.position='relative';
+  if(editMode){var tp=document.createElement('span');tp.className='pen';tp.style.position='static';tp.style.marginLeft='8px';tp.innerHTML='&#9998;';tp.onclick=function(){renameGroup(k);};gt.appendChild(tp);}
   document.getElementById('groupOv').classList.add('show');
+}
+var EDIT_PIN='111111';
+var editMode=false;
+function addPen(card,fn){
+  if(!editMode)return;
+  var sp=document.createElement('span');sp.className='pen';sp.innerHTML='&#9998;';
+  sp.onclick=function(e){e.stopPropagation();fn();};
+  card.appendChild(sp);
+}
+function toggleEditMode(){
+  if(!editMode){
+    var p=prompt('Enter PIN to edit titles');
+    if(p===null)return;
+    if(p.trim()!==EDIT_PIN){alert('Wrong PIN.');return;}
+    editMode=true;
+  }else editMode=false;
+  document.getElementById('editBtn').innerHTML=editMode?'&#10003; Done Editing':'&#9998; Edit Titles (PIN)';
+  buildSetGrid();
+}
+function dbPatch(path,body){
+  return fetch(SUPABASE_URL+'/rest/v1/'+path,{method:'PATCH',headers:supaHeaders({'Prefer':'return=minimal'}),body:JSON.stringify(body)})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);});
+}
+function renameInDb(oldName,newName,book){
+  var qb={set_name:newName};
+  if(book!==undefined)qb.book=book;
+  var enc=encodeURIComponent(oldName);
+  return dbPatch('questions?set_name=eq.'+enc,qb).then(function(){
+    if(oldName===newName)return;
+    return dbPatch('results?set_label=eq.'+enc,{set_label:newName}).then(function(){
+      return dbPatch('progress?set_key=eq.'+enc,{set_key:newName,set_label:newName});
+    });
+  });
+}
+function afterRename(reopenKey){
+  try{localStorage.removeItem('sba_q_cache');localStorage.removeItem('sba_lb_cache');}catch(e){}
+  buildSetGrid();
+  loadSavedProgressList();
+  if(reopenKey)openGroup(reopenKey);
+}
+function renameSet(idx,groupKey){
+  if(!editMode||idx<BASE_SET_COUNT)return;
+  if(!supaReady()){alert('Database is not set up.');return;}
+  var oldName=SL[idx],book=normBook(SB[idx]);
+  var input=prompt('New title for this set:',setDisplayName(idx));
+  if(input===null)return;
+  input=input.trim();
+  if(!input)return;
+  var newName=book?groupedSetName(book,input):input;
+  if(newName===oldName)return;
+  for(var i=0;i<SL.length;i++)if(i!==idx&&String(SL[i]).toLowerCase()===newName.toLowerCase()){alert('Another set already has that title.');return;}
+  renameInDb(oldName,newName).then(function(){
+    SL[idx]=newName;
+    if(isLazySet(SETS[idx]))SETS[idx].name=newName;
+    afterRename(groupKey);
+  }).catch(function(err){alert('Rename failed ('+(err&&err.message?err.message:'error')+'). Nothing was changed.');});
+}
+function renameGroup(k){
+  if(!editMode)return;
+  if(!supaReady()){alert('Database is not set up.');return;}
+  var members=[],oldBook='';
+  for(var i=0;i<SETS.length;i++)if(bookKey(SB[i])===k){members.push(i);if(!oldBook)oldBook=normBook(SB[i]);}
+  if(!members.length)return;
+  var input=prompt('New name for this group:',oldBook);
+  if(input===null)return;
+  var newBook=normBook(input);
+  if(!newBook||newBook===oldBook)return;
+  var newKey=bookKey(newBook);
+  if(newKey!==k)for(var j=0;j<SETS.length;j++)if(bookKey(SB[j])===newKey){alert('A group with that name already exists.');return;}
+  var plan=members.map(function(i){
+    var o=SL[i],n=o;
+    if(o.toLowerCase().indexOf(oldBook.toLowerCase()+' - ')===0)n=newBook+' - '+o.slice(oldBook.length+3);
+    return {i:i,o:o,n:n};
+  });
+  var chain=Promise.resolve();
+  plan.forEach(function(p){chain=chain.then(function(){return renameInDb(p.o,p.n,newBook);}).then(function(){
+    SL[p.i]=p.n;SB[p.i]=newBook;
+    if(isLazySet(SETS[p.i]))SETS[p.i].name=p.n;
+  });});
+  chain.then(function(){afterRename(newKey);}).catch(function(err){
+    afterRename(null);
+    alert('Rename stopped part-way ('+(err&&err.message?err.message:'error')+'). Reload the page to see the current state, then try again.');
+  });
 }
 function closeGroup(){document.getElementById('groupOv').classList.remove('show');}
 
