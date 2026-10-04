@@ -743,6 +743,100 @@ function groupQuestionsBySet(questions){
   return order.map(function(key){return {label:key,list:groups[key]};});
 }
 
+// ===== Smart exam builder (Full Exam / Timed Mode) =====
+var EXAM_SIZE=100;
+function qHash(str){
+  var h1=0x811c9dc5,h2=5381;
+  for(var i=0;i<str.length;i++){
+    var c=str.charCodeAt(i);
+    h1^=c;h1=Math.imul(h1,16777619)>>>0;
+    h2=((h2<<5)+h2+c)>>>0;
+  }
+  return h1.toString(36)+h2.toString(36);
+}
+function qKey(q){
+  if(!q._k)q._k=qHash(String(q.q||'').toLowerCase().replace(/\s+/g,' ').trim());
+  return q._k;
+}
+function shuffleRandom(arr){
+  var a=arr.slice();
+  for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}
+  return a;
+}
+function qWeight(st){
+  if(!st)return 4;                      // never answered (or only skipped)
+  if(st.last_correct===false)return 6;  // got it wrong last time
+  if(st.wrong>0)return 2;               // wrong before, right since
+  return Math.max(0.25,1/Math.max(1,st.seen)); // answered correctly: less likely the more often seen
+}
+function weightedPick(list,stats,k){
+  if(k>=list.length)return list.slice();
+  return list.map(function(q){
+    var w=qWeight(stats[qKey(q)]);
+    return {q:q,key:Math.pow(Math.random(),1/w)};
+  }).sort(function(a,b){return b.key-a.key;}).slice(0,k).map(function(x){return x.q;});
+}
+function buildSmartExam(stats){
+  stats=stats||{};
+  var seen={},pool=[];
+  for(var i=0;i<SETS.length;i++){
+    if(!Array.isArray(SETS[i]))continue;
+    SETS[i].forEach(function(q){var k=qKey(q);if(!seen[k]){seen[k]=1;pool.push(q);}});
+  }
+  if(pool.length<=EXAM_SIZE)return shuffleRandom(pool);
+  var groups={};
+  pool.forEach(function(q){
+    var g=String(q.s||'').trim().toLowerCase();
+    (groups[g]=groups[g]||[]).push(q);
+  });
+  var keys=Object.keys(groups),alloc={},rem=EXAM_SIZE;
+  keys.forEach(function(g){alloc[g]=0;});
+  while(rem>0){
+    var act=keys.filter(function(g){return alloc[g]<groups[g].length;});
+    if(!act.length)break;
+    var per=Math.max(1,Math.floor(rem/act.length));
+    act=shuffleRandom(act);
+    for(var a=0;a<act.length&&rem>0;a++){
+      var g=act[a],add=Math.min(per,groups[g].length-alloc[g],rem);
+      alloc[g]+=add;rem-=add;
+    }
+  }
+  var picked=[];
+  keys.forEach(function(g){picked=picked.concat(weightedPick(groups[g],stats,alloc[g]));});
+  return shuffleRandom(picked);
+}
+function fetchQStats(username){
+  var out={};
+  if(!supaReady()||!username)return Promise.resolve(out);
+  function page(from){
+    return fetch(SUPABASE_URL+'/rest/v1/question_stats?username=eq.'+encodeURIComponent(username)+'&select=qkey,seen,wrong,last_correct&order=qkey.asc',{
+      headers:supaHeaders({'Range-Unit':'items','Range':from+'-'+(from+999)}),cache:'no-store'
+    }).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(rows){
+      rows.forEach(function(r){out[r.qkey]={seen:Number(r.seen)||0,wrong:Number(r.wrong)||0,last_correct:r.last_correct};});
+      if(rows.length===1000)return page(from+1000);
+    });
+  }
+  return page(0).then(function(){return out;}).catch(function(){return {};});
+}
+var logQueue=[],logTimer=null;
+function logAnswer(q,correct){
+  if(!supaReady()||!q)return;
+  var u=getUsername();
+  if(!u||u==='Anonymous')return;
+  logQueue.push({username:u,qkey:qKey(q),correct:!!correct});
+  clearTimeout(logTimer);logTimer=setTimeout(flushLog,2000);
+}
+function flushLog(){
+  clearTimeout(logTimer);
+  if(!logQueue.length||!supaReady())return Promise.resolve();
+  var batch=logQueue.splice(0);
+  return fetch(SUPABASE_URL+'/rest/v1/answer_log',{
+    method:'POST',keepalive:true,
+    headers:supaHeaders({'Prefer':'return=minimal'}),
+    body:JSON.stringify(batch)
+  }).catch(function(){});
+}
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flushLog();});
 function seedShuffle(arr,seed){
   var a=arr.slice(),s=seed;
   var r=function(){s=(s*1664525+1013904223)&0x7fffffff;return s/0x7fffffff;};
@@ -1426,9 +1520,10 @@ function startExam(m,setIdx){
     lbl=m==='timed'?'Timed Mode':'Full Exam';
     showExamLoading(true);
     ensureAllSetsLoaded().then(function(){
+      return flushLog().then(function(){return fetchQStats(nameVal);});
+    }).then(function(stats){
       showExamLoading(false);
-      var seed=m==='timed'?77:55;
-      qs=getMixed(seed);
+      qs=buildSmartExam(stats);
       beginExamNow();
     }).catch(function(){
       showExamLoading(false);
@@ -1617,6 +1712,7 @@ function mk(tag,cls,txt,fn){var el=document.createElement(tag);el.className=cls;
 function pick(L){
   if(ans[cur]!==null)return;
   stopTimer();ans[cur]=L;
+  logAnswer(qs[cur],L===qs[cur].a);
   if(mode==='timed'){
     renderQ();
     setTimeout(function(){if(cur<qs.length-1){cur++;hintShown=false;renderQ();}else finishExam();},1300);
@@ -1642,7 +1738,7 @@ function updateTimerDisplay(){
 }
 function timeUp(){
   if(ans[cur]!==null)return;
-  ans[cur]='TIMEUP';renderQ();
+  ans[cur]='TIMEUP';logAnswer(qs[cur],false);renderQ();
   document.getElementById('timeup-ov').classList.add('show');
 }
 function dismissTimeup(){
@@ -1652,6 +1748,7 @@ function dismissTimeup(){
 
 function finishExam(){
   stopTimer();
+  flushLog();
   deleteProgress(progressKey(mode,lbl));
   wrongBank=qs.filter(function(q,i){return ans[i]!==null&&ans[i]!=='SKIP'&&ans[i]!=='TIMEUP'&&ans[i]!==q.a;});
   var tot=qs.length,ok=0,wr=0,sk=0;
