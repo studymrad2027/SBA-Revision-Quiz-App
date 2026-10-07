@@ -147,7 +147,7 @@ button{font-family:Georgia,serif;cursor:pointer;}
 .sc-d{font-size:10px;color:#27ae60;font-weight:700;margin-top:3px;font-family:sans-serif;}
 .opt{position:relative;}
 .opt.kb{outline:2px solid var(--gold);outline-offset:1px;background:rgba(212,168,67,.1);}
-.opt.kb:after{content:"\25B6";position:absolute;right:58px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:11px;}
+.opt.kb:after{content:"\25B6";position:absolute;right:46px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:11px;}
 .kb-hint{display:none;margin-top:12px;font-size:11px;color:var(--grey);font-family:sans-serif;text-align:center;line-height:1.6;}
 @media (hover:hover) and (pointer:fine){.kb-hint{display:block;}}
 .lb-you-bar{position:sticky;top:48px;z-index:20;background:var(--bg2);border:1px solid rgba(212,168,67,.5);border-radius:10px;padding:9px 12px;margin-bottom:12px;font-family:sans-serif;text-align:left;}
@@ -172,8 +172,10 @@ button{font-family:Georgia,serif;cursor:pointer;}
 .lb-bar{height:4px;background:rgba(128,128,128,.2);border-radius:2px;margin-top:6px;overflow:hidden;}
 .lb-bar div{height:4px;background:var(--gold);border-radius:2px;}
 .opt .opt-t{flex:1;}
-.opt-x{margin-left:auto;align-self:center;flex:0 0 34px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(128,128,128,.4);display:flex;align-items:center;justify-content:center;color:var(--grey);cursor:pointer;-webkit-tap-highlight-color:transparent;}
-.opt-x svg{width:18px;height:18px;display:block;}
+.opt-x{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;border:1px solid rgba(128,128,128,.4);display:flex;align-items:center;justify-content:center;color:var(--grey);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.opt-x:before{content:"";position:absolute;inset:-6px -8px;}
+.opt-x svg{width:15px;height:15px;display:block;}
+.opt.has-x{padding-right:46px;}
 .opt.out{border-color:rgba(231,76,60,.45);}
 .opt.out.kb:after{display:none;}
 .opt.out .opt-lbl,.opt.out .opt-t{opacity:.4;}
@@ -194,6 +196,8 @@ body.drawing #drawBar{display:flex;}
 .dc.on{border-color:var(--wh);box-shadow:0 0 0 2px var(--gold);}
 .dsep{width:1px;height:22px;background:rgba(128,128,128,.35);}
 #drawBtn.active{background:var(--gold);color:#0d1b2a;}
+.copy-btn{display:block;margin:18px auto 0;background:var(--bg2);border:1px solid rgba(128,128,128,.3);color:var(--grey);border-radius:16px;padding:6px 14px;font-size:11px;font-family:sans-serif;font-weight:700;cursor:pointer;}
+.copy-btn.ok{border-color:#27ae60;color:#27ae60;}
 .set-card,.grp-card{position:relative;}
 .pen{position:absolute;top:2px;right:3px;font-size:13px;line-height:1;padding:4px 6px;background:rgba(212,168,67,.25);color:var(--gold);border-radius:6px;}
 .btn-edit{background:var(--bg2);border:1px solid rgba(212,168,67,.4);border-radius:10px;padding:9px;color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;width:100%;max-width:300px;margin-bottom:10px;}
@@ -367,6 +371,7 @@ body.drawing #drawBar{display:flex;}
     </div>
     <div class="nav" id="navRow"></div>
     <div class="kb-hint">&#8593; &#8595; choose &middot; Enter select / next &middot; A&ndash;E answer &middot; &#8592; clear / back &middot; &#8594; rule out / next &middot; X toggle &middot; S skip &middot; H hint</div>
+    <button type="button" class="copy-btn" id="copyQBtn" onclick="copyQuestion()">Copy question &amp; options</button>
   </div>
 </div>
 
@@ -1672,6 +1677,7 @@ function renderQ(){
     var tspan=document.createElement('span');tspan.className='opt-t';tspan.textContent=txt;
     btn.appendChild(lspan);btn.appendChild(tspan);
     if(!isA){
+      btn.classList.add('has-x');
       if(crossedHas(cur,L))btn.classList.add('out');
       var xs=document.createElement('span');xs.className='opt-x';
       xs.setAttribute('role','button');xs.setAttribute('aria-label','Rule out option '+L);
@@ -1771,6 +1777,41 @@ document.addEventListener('keydown',function(e){
     if(k==='ArrowLeft'){e.preventDefault();prevQ();return;}
   }
 });
+function copyQuestion(){
+  if(!qs||!qs.length)return;
+  var q=qs[cur];
+  var text='Question'+(q.s?' ('+q.s+')':'')+':\n'+q.q+'\n\n'+q.o.join('\n');
+  var mine=ans[cur];
+  if(mine!==null&&mine!==undefined){ // only after you have answered, so nothing is spoiled earlier
+    function optText(L){for(var i=0;i<q.o.length;i++)if(q.o[i][0]===L)return q.o[i];return L;}
+    text+='\n\nCorrect answer: '+optText(q.a);
+    if(mine==='SKIP')text+='\nMy answer: skipped';
+    else if(mine==='TIMEUP')text+='\nMy answer: timed out';
+    else text+='\nMy answer: '+optText(mine)+(mine===q.a?' (correct)':' (wrong)');
+    if(q.e&&String(q.e).trim())text+='\n\nTeaching point:\n'+String(q.e).trim();
+  }
+  var btn=document.getElementById('copyQBtn');
+  function done(ok){
+    if(!btn)return;
+    btn.blur();
+    btn.textContent=ok?'Copied \u2713':'Copy failed - select the text manually';
+    btn.classList.toggle('ok',ok);
+    setTimeout(function(){btn.textContent='Copy question & options';btn.classList.remove('ok');},1600);
+  }
+  function fallback(){
+    var ta=document.createElement('textarea');
+    ta.value=text;ta.setAttribute('readonly','');
+    ta.style.cssText='position:fixed;top:0;left:0;opacity:0;';
+    document.body.appendChild(ta);ta.select();
+    var ok=false;
+    try{ok=document.execCommand('copy');}catch(e){}
+    document.body.removeChild(ta);
+    done(ok);
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){done(true);},fallback);
+  }else fallback();
+}
 function toggleHint(){
   hintShown=!hintShown;
   document.getElementById('hintBox').className='hint-box'+(hintShown?' show':'');
