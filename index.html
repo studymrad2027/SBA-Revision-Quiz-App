@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
 <title>Backbencher Fast SBA Revision - Dr Ram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,700;1,7..72,400&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0d1b2a;--bg2:#162436;--bg3:#1e3048;--gold:#d4a843;--red:#e74c3c;--green:#27ae60;--grey:#7a8fa6;--tx:#f0ebe0;--wh:#ffffff;}
 .light{--bg:#f5f0e8;--bg2:#ffffff;--bg3:#e8e0d0;--tx:#1a2030;--wh:#1a2030;--grey:#556070;}
@@ -198,6 +201,19 @@ body.drawing #drawBar{display:flex;}
 #drawBtn.active{background:var(--gold);color:#0d1b2a;}
 .copy-btn{display:block;margin:18px auto 0;background:var(--bg2);border:1px solid rgba(128,128,128,.3);color:var(--grey);border-radius:16px;padding:6px 14px;font-size:11px;font-family:sans-serif;font-weight:700;cursor:pointer;}
 .copy-btn.ok{border-color:#27ae60;color:#27ae60;}
+:root{--read:'Source Sans 3','Source Sans Pro','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;--qs:1;}
+.qtext{font-family:var(--read);font-size:calc(clamp(17px,2.4vw,21px) * var(--qs));line-height:1.65;font-weight:400;}
+.opt,.opt .opt-t{font-family:var(--read);font-size:calc(16px * var(--qs));line-height:1.5;}
+.hint-txt{font-size:calc(13px * var(--qs));}
+.exp-txt,.exp-txt .tp-para,.kp-txt{font-size:calc(12px * var(--qs));}
+.rev-q{font-family:var(--read);line-height:1.6;}
+.tsz{display:flex;align-items:center;gap:6px;margin:0;}
+.tsgrp{display:inline-flex;}
+.tsgrp .tsb{border-radius:0;padding:3px 11px;}
+.tsgrp .tsb:first-child{border-radius:8px 0 0 8px;}
+.tsgrp .tsb:last-child{border-radius:0 8px 8px 0;margin-left:-1px;}
+.tsb{background:var(--bg2);border:1px solid rgba(128,128,128,.3);color:var(--grey);border-radius:8px;padding:2px 10px;font-size:12px;font-weight:700;font-family:sans-serif;cursor:pointer;}
+.tsb:disabled{opacity:.35;cursor:default;}
 .set-card,.grp-card{position:relative;}
 .pen{position:absolute;top:2px;right:3px;font-size:13px;line-height:1;padding:4px 6px;background:rgba(212,168,67,.25);color:var(--gold);border-radius:6px;}
 .btn-edit{background:var(--bg2);border:1px solid rgba(212,168,67,.4);border-radius:10px;padding:9px;color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;width:100%;max-width:300px;margin-bottom:10px;}
@@ -348,13 +364,14 @@ body.drawing #drawBar{display:flex;}
     <div class="divider"></div>
     <div class="qtag-row">
       <div class="sys-tag" id="qSys">Neuro</div>
+      <div class="tsz"><div class="tsgrp"><button type="button" class="tsb" id="tsMinus" aria-label="Smaller text" onclick="adjustTextSize(-1)">A&minus;</button><button type="button" class="tsb" id="tsPlus" aria-label="Larger text" onclick="adjustTextSize(1)">A+</button></div><button type="button" class="tsb" id="fontBtn" aria-label="Change font" onclick="cycleFont()">Sans</button></div>
       <div class="qtag-btns">
         <button type="button" class="btn-prev" id="qPrevBtn" onclick="prevQ()">Prev</button>
         <button type="button" class="btn-skip" id="qSkipBtn" onclick="skipQ()">Skip</button>
         <button type="button" class="btn-next" id="qNextBtn" onclick="nextQ()">Next</button>
       </div>
     </div>
-    <div class="qtext" id="qText"></div>
+        <div class="qtext" id="qText"></div>
     <button class="hint-btn" id="hintBtn" onclick="toggleHint()">&#128161; Hint</button>
     <div class="hint-box" id="hintBox">
       <div class="hint-lbl">Hint</div>
@@ -1741,6 +1758,8 @@ document.addEventListener('keydown',function(e){
     if(k==='Enter'){e.preventDefault();dismissTimeup();}
     return;
   }
+  if(k==='+'||k==='='){e.preventDefault();adjustTextSize(1);return;}
+  if(k==='-'||k==='_'){e.preventDefault();adjustTextSize(-1);return;}
   if(!qs||!qs.length)return;
   var q=qs[cur],n=q.o.length,timed=(mode==='timed');
   if(ans[cur]===null){
@@ -1777,6 +1796,40 @@ document.addEventListener('keydown',function(e){
     if(k==='ArrowLeft'){e.preventDefault();prevQ();return;}
   }
 });
+var TS_STEPS=[0.85,1,1.15,1.3,1.5],tsIdx=1;
+try{var tsv=parseInt(localStorage.getItem('sba_text_idx'),10);if(tsv>=0&&tsv<TS_STEPS.length)tsIdx=tsv;}catch(e){}
+function applyTextSize(){
+  document.documentElement.style.setProperty('--qs',TS_STEPS[tsIdx]);
+  var m=document.getElementById('tsMinus'),p=document.getElementById('tsPlus');
+  if(m)m.disabled=tsIdx===0;
+  if(p)p.disabled=tsIdx===TS_STEPS.length-1;
+}
+var FONTS=[
+  {n:'Sans',v:"'Source Sans 3','Source Sans Pro','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif"},
+  {n:'Serif',v:"'Literata','Source Serif 4','Iowan Old Style','Palatino Linotype',Georgia,serif"},
+  {n:'Classic',v:"Georgia,'Times New Roman',serif"}
+],fontIdx=0;
+try{var fv=parseInt(localStorage.getItem('sba_font_idx'),10);if(fv>=0&&fv<FONTS.length)fontIdx=fv;}catch(e){}
+function applyFont(){
+  document.documentElement.style.setProperty('--read',FONTS[fontIdx].v);
+  var b=document.getElementById('fontBtn');if(b)b.textContent=FONTS[fontIdx].n;
+}
+function cycleFont(){
+  fontIdx=(fontIdx+1)%FONTS.length;
+  try{localStorage.setItem('sba_font_idx',String(fontIdx));}catch(e){}
+  applyFont();
+  drawStore={};drawHist={}; // text reflows, so old marks would no longer line up
+  if(typeof dRedraw==='function')dRedraw();
+}
+function adjustTextSize(d){
+  var n=tsIdx+d;
+  if(n<0||n>=TS_STEPS.length)return;
+  tsIdx=n;
+  try{localStorage.setItem('sba_text_idx',String(n));}catch(e){}
+  applyTextSize();
+  drawStore={};drawHist={}; // text reflows, so old marks would no longer line up
+  if(typeof dRedraw==='function')dRedraw();
+}
 function copyQuestion(){
   if(!qs||!qs.length)return;
   var q=qs[cur];
@@ -2193,6 +2246,8 @@ function goHome(){stopTimer();document.getElementById('timeup-ov').classList.rem
 buildSetGrid();
 initCountdown();
 initDraw();
+applyTextSize();
+applyFont();
 loadUsernameField();
 refreshDone();
 loadPersistedQuestions();
