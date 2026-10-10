@@ -1293,44 +1293,72 @@ function voiceParse(tr){
   for(var L in V_LET)if(V_LET[L].indexOf(w)>=0)return {L:L,heard:s};
   return null;
 }
+var V_SILENCE_OK=1400,V_SILENCE_UNCLEAR=3000,V_NOSPEECH=10000,V_MAX=15000;
+var voiceTimers={sil:0,max:0,none:0};
+function voiceClearTimers(){clearTimeout(voiceTimers.sil);clearTimeout(voiceTimers.max);clearTimeout(voiceTimers.none);voiceTimers.sil=voiceTimers.max=voiceTimers.none=0;}
 function voiceStopListen(){
   voiceListening=false;
+  voiceClearTimers();
   if(vWave.state==='listen'||vWave.state==='voice')waveSet('idle');
   var m=document.getElementById('vMic');if(m){m.classList.remove('live');m.innerHTML='&#127908; Tap to answer';}
-  if(voiceRec){try{voiceRec.onresult=voiceRec.onerror=voiceRec.onend=null;voiceRec.abort();}catch(e){}voiceRec=null;}
+  if(voiceRec){try{voiceRec.onresult=voiceRec.onerror=voiceRec.onend=voiceRec.onspeechstart=voiceRec.onspeechend=null;voiceRec.abort();}catch(e){}voiceRec=null;}
 }
 function voiceCancelPending(){if(voicePending){clearTimeout(voicePending);voicePending=null;}}
+// Tap to talk: keeps listening through short pauses. It stops ~1.4 s after you stop talking (when it understood you),
+// ~3 s after unclear speech, 10 s if you say nothing, and 15 s at most.
 function voiceMicTap(){
   if(!VREC)return;
   if(voiceListening){voiceStopListen();vStatus('Stopped listening.');return;}
   voiceCancelPending();
   voiceStopSpeech();
   var rec=new VREC();voiceRec=rec;
-  rec.lang='en-GB';rec.continuous=false;rec.interimResults=false;rec.maxAlternatives=5;
+  rec.lang='en-GB';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=5;
   voiceListening=true;
   waveSet('listen');
-  var m=document.getElementById('vMic');if(m){m.classList.add('live');m.innerHTML='&#9209; Listening&hellip;';}
+  var m=document.getElementById('vMic');if(m){m.classList.add('live');m.innerHTML='&#9209; Listening&hellip; (tap to stop)';}
   vStatus('&#127908; Listening&hellip; say <b>A&ndash;E</b>, <b>1&ndash;5</b>, <b>alpha&hellip;eagle</b> or <b>ayam&hellip;emas</b> (or next / repeat / skip).');
-  var got=false;
-  rec.onspeechstart=function(){if(voiceListening)waveSet('voice');};
+  var heardAny=false,deadline=Date.now()+V_MAX,restarts=0,lastFull='',lastCmd=null;
+  function finish(cmd,text){voiceStopListen();voiceHandle(cmd,text);}
+  function giveUp(msg){voiceStopListen();vStatus(msg);}
+  voiceTimers.max=setTimeout(function(){
+    if(!voiceListening)return;
+    if(lastCmd)finish(lastCmd,lastFull);else giveUp('Time is up'+(lastFull?' &ndash; I heard &ldquo;'+escTP(lastFull)+'&rdquo; but could not match it':'')+'. Tap <b>Tap to answer</b> and try again.');
+  },V_MAX);
+  voiceTimers.none=setTimeout(function(){if(voiceListening&&!heardAny)giveUp('Did not hear anything. Tap <b>Tap to answer</b> and try again.');},V_NOSPEECH);
+  rec.onspeechstart=function(){heardAny=true;clearTimeout(voiceTimers.none);if(voiceListening)waveSet('voice');};
   rec.onspeechend=function(){if(voiceListening)waveSet('listen');};
   rec.onresult=function(ev){
-    got=true;
-    var res=ev.results[0],cmd=null,first='';
-    for(var i=0;i<res.length;i++){if(!i)first=res[i].transcript;var r=voiceParse(res[i].transcript);if(r&&!cmd)cmd=r;}
-    voiceStopListen();
-    voiceHandle(cmd,first);
+    heardAny=true;clearTimeout(voiceTimers.none);
+    var full='',lastAlts=[];
+    for(var i=0;i<ev.results.length;i++){
+      var r=ev.results[i];
+      full+=(full?' ':'')+(r[0]?r[0].transcript:'');
+      if(i===ev.results.length-1){for(var k=0;k<r.length;k++)lastAlts.push(r[k].transcript);}
+    }
+    lastFull=full.trim();
+    var cmd=voiceParse(lastFull);
+    for(var j=0;j<lastAlts.length&&!cmd;j++)cmd=voiceParse(lastAlts[j]);
+    lastCmd=cmd;
+    vStatus('&#127908; Listening&hellip; heard &ldquo;'+escTP(lastFull)+'&rdquo;'+(cmd?' &ndash; got it':''));
+    clearTimeout(voiceTimers.sil);
+    voiceTimers.sil=setTimeout(function(){
+      if(!voiceListening)return;
+      if(cmd)finish(cmd,lastFull);
+      else giveUp('Did not catch &ldquo;'+escTP(lastFull)+'&rdquo;. Tap <b>Tap to answer</b> and say A&ndash;E, 1&ndash;5, alpha&hellip;eagle or ayam&hellip;emas.');
+    },cmd?V_SILENCE_OK:V_SILENCE_UNCLEAR);
   };
   rec.onerror=function(ev){
     var e=ev&&ev.error;
-    voiceStopListen();
-    if(e==='not-allowed'||e==='service-not-allowed')vStatus('Microphone is blocked. Allow microphone access for this site in your browser settings, then try again.');
-    else if(e==='no-speech')vStatus('Did not hear anything. Tap <b>Tap to answer</b> and try again.');
-    else if(e==='network')vStatus('Speech recognition needs an internet connection.');
-    else if(e!=='aborted')vStatus('Could not listen ('+e+'). Try again.');
+    if(e==='no-speech'||e==='aborted')return; // the browser ended the session; onend restarts it while time remains
+    giveUp(e==='not-allowed'||e==='service-not-allowed'?'Microphone is blocked. Allow microphone access for this site in your browser settings, then try again.':e==='network'?'Speech recognition needs an internet connection.':'Could not listen ('+e+'). Try again.');
   };
-  rec.onend=function(){if(voiceListening&&!got){voiceStopListen();vStatus('Did not catch that. Tap <b>Tap to answer</b> and try again.');}};
-  try{rec.start();}catch(e){voiceStopListen();vStatus('Could not start the microphone. Try again.');}
+  rec.onend=function(){
+    if(!voiceListening)return;
+    if(Date.now()<deadline-800&&restarts<6){restarts++;try{rec.start();return;}catch(e){}}
+    if(lastCmd)finish(lastCmd,lastFull);
+    else giveUp(lastFull?'Did not catch &ldquo;'+escTP(lastFull)+'&rdquo;. Tap <b>Tap to answer</b> and try again.':'Did not hear anything. Tap <b>Tap to answer</b> and try again.');
+  };
+  try{rec.start();}catch(e){giveUp('Could not start the microphone. Try again.');}
 }
 function voiceHandle(cmd,heardText){
   var q=qs[cur],answered=(ans[cur]!==null&&ans[cur]!==undefined);
