@@ -324,9 +324,21 @@ button:not(:disabled):not(.dc):active,.opt:active,.set-card:active,.grp-card:act
 .nav-right{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
 .tsz2{order:1;}
 .qtag-btns{order:2;}
+@media (max-width:600px){
+  /* top bar on phones: everything on one line */
+  .hdr{flex-wrap:nowrap;gap:5px;padding:8px 8px;}
+  .hdr-brand{font-size:12px;}
+  .hdr .badge{padding:2px 6px;}
+  .hdr button{padding:3px 6px !important;flex:none;}
+  .hdr .prog-w{flex:0 1 34px;min-width:10px;}
+  .hdr .timer-wrap{flex:none;}
+  /* Timed mode has the countdown ring too, so drop the progress bar and mode label to keep one line */
+  .hdr:has(#timerWrap[style*="flex"]) .prog-w,.hdr:has(#timerWrap[style*="flex"]) #hLbl{display:none;}
+  .draw-lbl{display:none;}
+  #drawBtn{min-width:30px;text-align:center;}
+}
 @media (max-width:700px){
   .tsz2{order:5;flex-basis:100%;}
-  .prog-w{flex:0 0 34px;min-width:34px;}
 }
 @media (max-width:440px){
   .qtag-row{gap:5px;}
@@ -444,7 +456,7 @@ body.voice-open #exam{padding-bottom:160px;}
     <span class="score-txt" id="scoreTxt">0/0</span>
     <button onclick="toggleMode()" style="background:none;border:1px solid rgba(212,168,67,.25);color:var(--gold);padding:3px 8px;border-radius:14px;font-size:11px;font-family:sans-serif;">&#9728;</button>
     <button class="fs-toggle" onclick="toggleFullscreen()" style="background:none;border:1px solid rgba(212,168,67,.25);color:var(--gold);padding:3px 8px;border-radius:14px;font-size:11px;font-family:sans-serif;">&#9974;</button>
-    <button id="drawBtn" title="Draw / highlight on the question" onclick="toggleDraw()" style="background:none;border:1px solid rgba(212,168,67,.25);color:var(--gold);padding:3px 8px;border-radius:14px;font-size:11px;font-family:sans-serif;">&#9998; Draw</button>
+    <button id="drawBtn" title="Draw / highlight on the question" onclick="toggleDraw()" style="background:none;border:1px solid rgba(212,168,67,.25);color:var(--gold);padding:3px 8px;border-radius:14px;font-size:11px;font-family:sans-serif;" aria-label="Draw">&#9998;<span class="draw-lbl"> Draw</span></button>
     <button class="hdr-back" onclick="document.getElementById('hcov').classList.add('show')">&#8592;</button>
   </div>
   <div class="ebody">
