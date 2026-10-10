@@ -322,8 +322,6 @@ button:not(:disabled):not(.dc):active,.opt:active,.set-card:active,.grp-card:act
 .tsz .tsgrp .tsb{padding:0;}
 #fontBtn{font-size:11px;letter-spacing:-.2px;overflow:hidden;}
 .nav-right{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
-.tsz2{order:1;}
-.qtag-btns{order:2;}
 @media (max-width:600px){
   /* top bar on phones: everything on one line */
   .hdr{flex-wrap:nowrap;gap:5px;padding:8px 8px;}
@@ -336,9 +334,6 @@ button:not(:disabled):not(.dc):active,.opt:active,.set-card:active,.grp-card:act
   .hdr:has(#timerWrap[style*="flex"]) .prog-w,.hdr:has(#timerWrap[style*="flex"]) #hLbl{display:none;}
   .draw-lbl{display:none;}
   #drawBtn{min-width:30px;text-align:center;}
-}
-@media (max-width:700px){
-  .tsz2{order:5;flex-basis:100%;}
 }
 @media (max-width:440px){
   .qtag-row{gap:5px;}
@@ -464,13 +459,12 @@ body.voice-open #exam{padding-bottom:160px;}
     <div class="divider"></div>
     <div class="qtag-row">
       <div class="sys-tag" id="qSys">Neuro</div>
-      <div class="tsz"><div class="tsgrp"><button type="button" class="tsb" id="tsMinus" aria-label="Smaller text" onclick="adjustTextSize(-1)">A&minus;</button><button type="button" class="tsb" id="tsPlus" aria-label="Larger text" onclick="adjustTextSize(1)">A+</button></div><button type="button" class="tsb" id="fontBtn" aria-label="Change font" onclick="cycleFont()">Sans</button></div>
+      <div class="tsz"><div class="tsgrp"><button type="button" class="tsb" id="tsMinus" aria-label="Smaller text" onclick="adjustTextSize(-1)">A&minus;</button><button type="button" class="tsb" id="tsPlus" aria-label="Larger text" onclick="adjustTextSize(1)">A+</button></div><button type="button" class="tsb" id="fontBtn" aria-label="Change font" onclick="cycleFont()">Sans</button><button type="button" class="tsb" id="hlBtn" aria-label="Toggle highlighting" title="Highlight history / findings / question (L)" onclick="toggleHL()">HL</button><button type="button" class="tsb" id="spkBtn" aria-label="Read aloud and answer by voice" title="Read aloud / answer by voice" onclick="voiceToggle()" style="display:none">&#128266;</button></div>
       <div class="qtag-btns">
         <button type="button" class="btn-prev" id="qPrevBtn" onclick="prevQ()">Prev</button>
         <button type="button" class="btn-skip" id="qSkipBtn" onclick="skipQ()">Skip</button>
         <button type="button" class="btn-next" id="qNextBtn" onclick="nextQ()">Next</button>
       </div>
-      <div class="tsz tsz2"><button type="button" class="tsb" id="hlBtn" aria-label="Toggle highlighting" title="Highlight history / findings / question (L)" onclick="toggleHL()">HL</button><button type="button" class="tsb" id="spkBtn" aria-label="Read aloud and answer by voice" title="Read aloud / answer by voice" onclick="voiceToggle()" style="display:none">&#128266;</button></div>
     </div>
         <div class="qtext" id="qText"></div>
     <div class="hl-legend" id="hlLegend" style="display:none"></div>
