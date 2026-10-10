@@ -75,7 +75,7 @@ button{font-family:Georgia,serif;cursor:pointer;}
 .exp-box.show{display:block;}
 .exp-lbl,.kp-lbl{position:relative;background:rgba(128,128,128,.14);border-bottom:1px solid rgba(128,128,128,.2);padding:12px 44px;text-align:center;font-size:14px;font-weight:700;letter-spacing:.2px;text-transform:none;color:var(--wh);font-family:sans-serif;margin:0;}
 .exp-lbl::after{content:"\1F4A1";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:15px;}
-.kp-lbl::after{content:"\1F516";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:15px;}
+.kp-lbl::after{content:"\1F4DD";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:15px;}
 .exp-txt,.kp-txt{padding:6px 16px 14px;font-size:13px;line-height:1.65;color:var(--tx);text-align:left;overflow-wrap:break-word;}
 .kp-box{background:var(--bg2);border:1px solid rgba(128,128,128,.25);border-left:3px solid var(--gold);border-radius:10px;padding:0;margin:0 0 14px;display:none;font-family:sans-serif;overflow:hidden;}
 .kp-box.show{display:block;}
@@ -303,12 +303,11 @@ body.drawing #drawBar{display:flex;}
 .vbtn{background:rgba(128,128,128,.15);border:1px solid rgba(128,128,128,.35);color:var(--tx);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:sans-serif;}
 .vbtn.mic{background:var(--gold);border-color:var(--gold);color:#0d1b2a;}
 .vbtn.mic.live{background:#e74c3c;border-color:#e74c3c;color:#fff;animation:vpulse 1s infinite;}
-.vbtn.x{margin-left:auto;}
+.vbtn.x{margin-left:auto;align-self:flex-start;}
 @keyframes vpulse{50%{opacity:.6;}}
 body.voice-open #exam{padding-bottom:190px;}
 .vsel{width:100%;margin-top:7px;background:var(--bg3,rgba(128,128,128,.15));color:var(--tx);border:1px solid rgba(128,128,128,.35);border-radius:8px;padding:7px 8px;font-size:12px;font-family:sans-serif;}
 /* ===== voice wave + button glow / press feedback ===== */
-.vwave{width:100%;height:34px;display:block;margin:0 0 7px;}
 @media (hover:hover){
   button:not(:disabled):not(.dc):hover,.opt:hover,.set-card:hover,.grp-card:hover{box-shadow:0 0 0 1px rgba(212,168,67,.55),0 0 14px rgba(212,168,67,.45);filter:brightness(1.08);}
   .vbtn.mic:hover{box-shadow:0 0 0 1px rgba(255,255,255,.4),0 0 16px rgba(212,168,67,.8);}
@@ -318,6 +317,34 @@ button:not(:disabled):not(.dc):active,.opt:active,.set-card:active,.grp-card:act
 @keyframes tapring{0%{box-shadow:0 0 0 0 rgba(212,168,67,.85);}100%{box-shadow:0 0 0 14px rgba(212,168,67,0);}}
 .tap-fx{animation:tapring .45s ease-out;}
 @media (prefers-reduced-motion:reduce){.tap-fx{animation:none;}button:not(:disabled):active{transform:none;}.vbtn.mic.live{animation:none;}}
+/* ===== toolbar sizing, bottom nav, compact voice panel ===== */
+.tsz .tsb{width:44px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1;box-sizing:border-box;}
+.tsz .tsgrp .tsb{padding:0;}
+#fontBtn{font-size:11px;letter-spacing:-.2px;overflow:hidden;}
+.nav-right{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+.tsz2{order:1;}
+.qtag-btns{order:2;}
+@media (max-width:700px){
+  .tsz2{order:5;flex-basis:100%;}
+}
+@media (max-width:440px){
+  .qtag-row{gap:5px;}
+  .tsz{gap:5px;}
+  .tsz .tsb{width:38px;height:32px;}
+  #fontBtn{font-size:10px;}
+  .qtag-btns{gap:5px;}
+  .qtag-btns button{padding:7px 8px;font-size:11px;}
+  .qtag-row .sys-tag{padding-left:7px;padding-right:7px;font-size:9px;letter-spacing:1px;}
+  .vbtns{gap:4px;}
+  .vbtn{padding:6px 7px;font-size:11px;}
+}
+.vtop{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+.vtop .vstat{margin:0;flex:1;min-width:0;}
+.vwave{width:40px;height:40px;flex:none;margin:0;border-radius:50%;border:2px solid rgba(128,128,128,.5);background:rgba(128,128,128,.08);}
+.vbar{padding:7px 9px;}
+.vbtn{padding:6px 9px;}
+.vsel{margin-top:6px;padding:5px 7px;}
+body.voice-open #exam{padding-bottom:160px;}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -424,12 +451,13 @@ button:not(:disabled):not(.dc):active,.opt:active,.set-card:active,.grp-card:act
     <div class="divider"></div>
     <div class="qtag-row">
       <div class="sys-tag" id="qSys">Neuro</div>
-      <div class="tsz"><div class="tsgrp"><button type="button" class="tsb" id="tsMinus" aria-label="Smaller text" onclick="adjustTextSize(-1)">A&minus;</button><button type="button" class="tsb" id="tsPlus" aria-label="Larger text" onclick="adjustTextSize(1)">A+</button></div><button type="button" class="tsb" id="fontBtn" aria-label="Change font" onclick="cycleFont()">Sans</button><button type="button" class="tsb" id="hlBtn" aria-label="Toggle highlighting" title="Highlight history / findings / question (L)" onclick="toggleHL()">HL</button><button type="button" class="tsb" id="spkBtn" aria-label="Read aloud and answer by voice" title="Read aloud / answer by voice" onclick="voiceToggle()" style="display:none">&#128266;</button></div>
+      <div class="tsz"><div class="tsgrp"><button type="button" class="tsb" id="tsMinus" aria-label="Smaller text" onclick="adjustTextSize(-1)">A&minus;</button><button type="button" class="tsb" id="tsPlus" aria-label="Larger text" onclick="adjustTextSize(1)">A+</button></div><button type="button" class="tsb" id="fontBtn" aria-label="Change font" onclick="cycleFont()">Sans</button></div>
       <div class="qtag-btns">
         <button type="button" class="btn-prev" id="qPrevBtn" onclick="prevQ()">Prev</button>
         <button type="button" class="btn-skip" id="qSkipBtn" onclick="skipQ()">Skip</button>
         <button type="button" class="btn-next" id="qNextBtn" onclick="nextQ()">Next</button>
       </div>
+      <div class="tsz tsz2"><button type="button" class="tsb" id="hlBtn" aria-label="Toggle highlighting" title="Highlight history / findings / question (L)" onclick="toggleHL()">HL</button><button type="button" class="tsb" id="spkBtn" aria-label="Read aloud and answer by voice" title="Read aloud / answer by voice" onclick="voiceToggle()" style="display:none">&#128266;</button></div>
     </div>
         <div class="qtext" id="qText"></div>
     <div class="hl-legend" id="hlLegend" style="display:none"></div>
@@ -444,20 +472,18 @@ button:not(:disabled):not(.dc):active,.opt:active,.set-card:active,.grp-card:act
       <div class="exp-txt" id="expTxt"></div>
     </div>
     <div class="kp-box" id="kpBox">
-      <div class="kp-lbl">Study Note</div>
+      <div class="kp-lbl">Teaching Point</div>
       <div class="kp-txt" id="kpTxt"></div>
     </div>
     <div class="ex-foot" id="exFoot"></div>
     <div class="nav" id="navRow"></div>
     <div class="vbar" id="voiceBar">
-      <div class="vstat" id="vStat">Voice ready</div>
-      <canvas class="vwave" id="vWave" aria-hidden="true"></canvas>
+      <div class="vtop"><canvas class="vwave" id="vWave" aria-hidden="true"></canvas><div class="vstat" id="vStat">Voice ready</div><button type="button" class="vbtn x" aria-label="Close voice panel" onclick="voiceClose()">&#10005;</button></div>
       <div class="vbtns">
         <button type="button" class="vbtn mic" id="vMic" onclick="voiceMicTap()">&#127908; Tap to answer</button>
         <button type="button" class="vbtn" id="vRep" onclick="voiceRepeat()">&#8635; Read again</button>
         <button type="button" class="vbtn" id="vStop" onclick="voiceStopTap()">&#9209; Stop</button>
         <button type="button" class="vbtn" id="vRate" onclick="voiceCycleRate()">1x</button>
-        <button type="button" class="vbtn x" onclick="voiceClose()">&#10005;</button>
       </div>
       <select class="vsel" id="vVoice" aria-label="Choose voice" onchange="voicePick(this.value)"></select>
     </div>
@@ -929,7 +955,7 @@ function downloadTemplate(){
       ['Option A - Option E','Yes','All five options must be filled'],
       ['Correct Answer','Yes','A, B, C, D or E'],
       ['Explanation','Yes','Shown in the Explanation box after answering. Optional formatting (Alt+Enter for new lines): ## Heading, - bullet (indent 2 spaces to nest), **bold**, *italic*, > quote. A heading like ## Why other options are incorrect becomes a collapsed, tap-to-open section'],
-      ['Key Point','No','Shown as the Study Note box after answering. If empty, no box is shown. Same formatting as Explanation, plus a first line like # Title (gold title) and > one-line definition (quote box). Topic and Difficulty columns feed the Radiopaedia link and difficulty chip under it'],
+      ['Key Point','No','Shown as the Teaching Point box after answering. If empty, no box is shown. Same formatting as Explanation, plus a first line like # Title (gold title) and > one-line definition (quote box). Topic and Difficulty columns feed the Radiopaedia link and difficulty chip under it'],
       ['Book','No','Sets with the same Book are grouped into one box on the home page. Leave the column out or empty for no group'],
       ['Hint (add this column yourself if you want it)','No','If the column exists and a cell has text, that question gets a Hint button'],
       ['Reference / Image Path/URL / Difficulty / Topic / Notes','No',''],
@@ -1212,7 +1238,7 @@ function voiceQuestionText(q){
 function voiceExplainText(q){
   var t='';
   if(q.e&&String(q.e).trim())t+='Explanation. '+voiceClean(q.e,true)+' ';
-  if(q.kp&&String(q.kp).trim())t+='Study note. '+voiceClean(q.kp)+' ';
+  if(q.kp&&String(q.kp).trim())t+='Teaching point. '+voiceClean(q.kp)+' ';
   return t;
 }
 function voiceResultText(q,mine){
@@ -1225,7 +1251,7 @@ function voiceResultText(q,mine){
 function voiceReadQuestion(){
   var q=qs[cur];if(!q)return;
   vStatus('&#128266; Reading the question&hellip; tap <b>Tap to answer</b> any time.');
-  voiceSpeak(voiceQuestionText(q),function(){vStatus('Ready. Tap <b>Tap to answer</b> and say A&ndash;E, 1&ndash;5, alpha&hellip;eagle or ayam&hellip;emas.');});
+  voiceSpeak(voiceQuestionText(q),function(){vStatus('Ready. Tap <b>Tap to answer</b> and say A&ndash;E, 1&ndash;5 or alpha&hellip;eagle.');});
 }
 function voiceReadResult(){
   var q=qs[cur];if(!q)return;
@@ -1316,7 +1342,7 @@ function voiceMicTap(){
   voiceListening=true;
   waveSet('listen');
   var m=document.getElementById('vMic');if(m){m.classList.add('live');m.innerHTML='&#9209; Listening&hellip; (tap to stop)';}
-  vStatus('&#127908; Listening&hellip; say <b>A&ndash;E</b>, <b>1&ndash;5</b>, <b>alpha&hellip;eagle</b> or <b>ayam&hellip;emas</b> (or next / repeat / skip).');
+  vStatus('&#127908; Listening&hellip; say <b>A&ndash;E</b>, <b>1&ndash;5</b> or <b>alpha&hellip;eagle</b> (or next / repeat / skip).');
   var heardAny=false,deadline=Date.now()+V_MAX,restarts=0,lastFull='',lastCmd=null;
   function finish(cmd,text){voiceStopListen();voiceHandle(cmd,text);}
   function giveUp(msg){voiceStopListen();vStatus(msg);}
@@ -1344,7 +1370,7 @@ function voiceMicTap(){
     voiceTimers.sil=setTimeout(function(){
       if(!voiceListening)return;
       if(cmd)finish(cmd,lastFull);
-      else giveUp('Did not catch &ldquo;'+escTP(lastFull)+'&rdquo;. Tap <b>Tap to answer</b> and say A&ndash;E, 1&ndash;5, alpha&hellip;eagle or ayam&hellip;emas.');
+      else giveUp('Did not catch &ldquo;'+escTP(lastFull)+'&rdquo;. Tap <b>Tap to answer</b> and say A&ndash;E, 1&ndash;5 or alpha&hellip;eagle.');
     },cmd?V_SILENCE_OK:V_SILENCE_UNCLEAR);
   };
   rec.onerror=function(ev){
@@ -1362,7 +1388,7 @@ function voiceMicTap(){
 }
 function voiceHandle(cmd,heardText){
   var q=qs[cur],answered=(ans[cur]!==null&&ans[cur]!==undefined);
-  if(!cmd){vStatus('Did not catch &ldquo;'+escTP(heardText||'')+'&rdquo;. Tap <b>Tap to answer</b> and say A&ndash;E, 1&ndash;5, alpha&hellip;eagle or ayam&hellip;emas.');return;}
+  if(!cmd){vStatus('Did not catch &ldquo;'+escTP(heardText||'')+'&rdquo;. Tap <b>Tap to answer</b> and say A&ndash;E, 1&ndash;5 or alpha&hellip;eagle.');return;}
   if(cmd.c){
     if(cmd.c==='stop'){voiceStopTap();return;}
     if(cmd.c==='repeat'||(cmd.c==='explain'&&answered)){voiceRepeat();return;}
@@ -1392,14 +1418,16 @@ function waveSize(){
   if(!w)return;
   c.width=Math.round(w*d);c.height=Math.round(h*d);
 }
-function waveDraw(amp){ // amp(i,n) -> 0..1
+function waveDraw(amp){ // amp(i,n) -> 0..1, drawn inside the small round indicator
   var c=document.getElementById('vWave');if(!c||!c.width)return;
-  var g=c.getContext('2d'),W=c.width,H=c.height,n=44,step=W/n,bw=step*0.55;
+  var d=window.devicePixelRatio||1,g=c.getContext('2d'),W=c.width,H=c.height,n=7;
+  var col=vWave.state==='speak'?'#d4a843':(vWave.state==='idle'?'rgba(128,128,128,.7)':'#e74c3c');
+  c.style.borderColor=col;
   g.clearRect(0,0,W,H);
-  var col=vWave.state==='speak'?'#d4a843':(vWave.state==='idle'?'rgba(128,128,128,.5)':'#e74c3c');
   g.fillStyle=col;
+  var x0=W*0.2,span=W*0.6,step=span/n,bw=step*0.58,maxH=H*0.56;
   for(var i=0;i<n;i++){
-    var a=Math.max(0.06,Math.min(1,amp(i,n))),bh=Math.max(2*(window.devicePixelRatio||1),a*H),x=i*step+(step-bw)/2,y=(H-bh)/2;
+    var a=Math.max(0.1,Math.min(1,amp(i,n))),bh=Math.max(2*d,a*maxH),x=x0+i*step+(step-bw)/2,y=(H-bh)/2;
     if(g.roundRect){g.beginPath();g.roundRect(x,y,bw,bh,bw/2);g.fill();}else g.fillRect(x,y,bw,bh);
   }
 }
@@ -2601,15 +2629,17 @@ function toggleHint(){
 function buildNav(isA){
   var nav=document.getElementById('navRow');nav.innerHTML='';
   var rem=ans.filter(function(a){return a===null;}).length;
-  if(cur>0&&mode!=='timed'){var pb=mk('button','btn-prev','Prev',function(){cur--;hintShown=false;renderQ();});nav.appendChild(pb);}
-  if(!isA&&mode!=='timed'){var sb=mk('button','btn-skip','Skip',function(){skipQ();});nav.appendChild(sb);}
-  if(cur<qs.length-1&&mode!=='timed'){var nb=mk('button','btn-next','Next',function(){cur++;hintShown=false;renderQ();});nav.appendChild(nb);}
-  if(rem===0||(cur===qs.length-1&&isA)){var fb=mk('button','btn-finish','Finish Exam',function(){finishExam();});nav.appendChild(fb);}
   var hbtn=document.createElement('button');
   hbtn.textContent='Home';
-  hbtn.style.cssText='background:none;border:1px solid rgba(128,128,128,.2);border-radius:8px;padding:9px 14px;color:var(--grey);font-size:12px;font-weight:700;margin-left:auto;';
+  hbtn.style.cssText='background:none;border:1px solid rgba(128,128,128,.2);border-radius:8px;padding:9px 14px;color:var(--grey);font-size:12px;font-weight:700;';
   hbtn.onclick=function(){document.getElementById('hcov').classList.add('show');};
   nav.appendChild(hbtn);
+  var right=document.createElement('div');right.className='nav-right';
+  if(cur>0&&mode!=='timed'){var pb=mk('button','btn-prev','Prev',function(){cur--;hintShown=false;renderQ();});right.appendChild(pb);}
+  if(!isA&&mode!=='timed'){var sb=mk('button','btn-skip','Skip',function(){skipQ();});right.appendChild(sb);}
+  if(cur<qs.length-1&&mode!=='timed'){var nb=mk('button','btn-next','Next',function(){cur++;hintShown=false;renderQ();});right.appendChild(nb);}
+  if(rem===0||(cur===qs.length-1&&isA)){var fb=mk('button','btn-finish','Finish Exam',function(){finishExam();});right.appendChild(fb);}
+  nav.appendChild(right);
 }
 
 function mk(tag,cls,txt,fn){var el=document.createElement(tag);el.className=cls;el.textContent=txt;el.onclick=fn;return el;}
@@ -2732,7 +2762,7 @@ function showReview(){
       +'<span>Correct: <strong style="color:#27ae60">'+q.a+'</strong></span>'
       +'<span style="font-weight:700;color:'+(isOk?'#27ae60':'#e74c3c')+'">'+(isOk?'Correct':'Wrong')+'</span></div>'
       +'<div class="rev-teach"><strong style="color:var(--gold);display:block;margin-bottom:6px;">Explanation</strong>'+formatTeach(q.e)+'</div>'
-      +((q.kp&&String(q.kp).trim())?'<div class="rev-kp"><strong style="color:var(--gold);display:block;margin-bottom:4px;">Study Note</strong>'+formatKP(q.kp)+'</div>':'');
+      +((q.kp&&String(q.kp).trim())?'<div class="rev-kp"><strong style="color:var(--gold);display:block;margin-bottom:4px;">Teaching Point</strong>'+formatKP(q.kp)+'</div>':'');
     list.appendChild(div);
   });
   show('review');
