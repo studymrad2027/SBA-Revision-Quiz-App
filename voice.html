@@ -1209,7 +1209,7 @@ function voiceClean(md,dropSource){
     var m=t.indexOf('\n')===-1?t.match(/\(([^()]{3,120})\)\s*\.?\s*$/):null;
     if(m&&/Radiopaedia|Dahnert|Grainger|Brant|edition|guideline|criteria|et al|WHO|ACR/i.test(m[1]))t=t.slice(0,t.length-m[0].length).trim();
   }
-  var src=t.split('\n'),pre=[];
+  var src=mdTight(t).split('\n'),pre=[];
   for(var i=0;i<src.length;i++){
     var tb=mdTableAt(src,i);
     if(tb){
@@ -1595,6 +1595,18 @@ var timerInterval=null,timeLeft=30,isLight=false,hintShown=false;
 var CIRC=2*Math.PI*13;
 
 function escTP(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function mdTight(t){
+  var L=String(t).split('\n'),out=[];
+  for(var i=0;i<L.length;i++){
+    if(!L[i].trim()){
+      var p=out.length?out[out.length-1].trim():'',j=i+1;
+      while(j<L.length&&!L[j].trim())j++;
+      if(p.charAt(0)==='|'&&j<L.length&&L[j].trim().charAt(0)==='|')continue;
+    }
+    out.push(L[i]);
+  }
+  return out.join('\n');
+}
 function mdSplitRow(l){
   l=String(l).trim().replace(/^\|/,'').replace(/\|$/,'');
   return l.replace(/\\\|/g,'\u0001').split('|').map(function(c){return c.replace(/\u0001/g,'|').trim();});
@@ -1613,7 +1625,7 @@ function richInline(x){
 // Mini formatter: # title, ## heading, ### sub-heading, > quote, - / * bullets (indent to nest), **bold**, *italic*, __underline__.
 // "## Why other options are incorrect" (and similar) becomes a collapsed, tap-to-open section.
 function formatRich(text){
-  var t=String(text||'').replace(/\r/g,'').replace(/\t/g,'  ').trim();
+  var t=mdTight(String(text||'').replace(/\r/g,'').replace(/\t/g,'  ').trim());
   if(!t)return '';
   var out='',stack=[],inQ=false,inFold=false;
   function closeLists(){while(stack.length){out+='</li></ul>';stack.pop();}}
