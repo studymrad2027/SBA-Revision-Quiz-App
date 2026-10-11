@@ -353,6 +353,8 @@ button:not(:disabled):not(.dc):active,.opt:active,.set-card:active,.grp-card:act
 .vbtn{padding:6px 9px;}
 .vsel{margin-top:6px;padding:5px 7px;}
 body.voice-open #exam{padding-bottom:160px;}
+/* no double-tap zoom on phones/tablets (pinch zoom still works) */
+html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
