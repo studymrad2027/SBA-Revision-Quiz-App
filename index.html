@@ -1726,8 +1726,26 @@ function exFootHTML(q){
 }
 
 var _snapCur=-1;
+// Snap targets (all screen sizes): toolbar row, first line of question, option A, explanation box, teaching point box.
+// Hidden boxes (explanation / teaching point before answering) are skipped automatically.
+function snapTargets(){
+  var h=document.querySelector('#exam .hdr');if(!h)return [];
+  var hh=h.offsetHeight,base=window.pageYOffset,out=[];
+  function add(el,pad,tb){
+    if(!el||!el.getBoundingClientRect)return;
+    var r=el.getBoundingClientRect();
+    if(!r.width&&!r.height)return;
+    if(el.id==='expBox'||el.id==='kpBox'){if(!el.classList.contains('show'))return;}
+    out.push({t:Math.max(0,Math.round(r.top+base-hh-(pad==null?4:pad))),tb:!!tb});
+  }
+  add(document.querySelector('#exam .qtag-row'),4,true); // toolbar row (small catch zone above it, normal below)
+  add(document.getElementById('qText'),8,true);
+  add(document.querySelector('#optsList .opt'),8);
+  add(document.getElementById('expBox'),8);
+  add(document.getElementById('kpBox'),8);
+  return out;
+}
 function snapToQuestion(force){
-  if(window.innerWidth>700)return;
   var h=document.querySelector('#exam .hdr'),r=document.querySelector('#exam .qtag-row');
   if(!h||!r||!document.getElementById('exam').classList.contains('active'))return;
   document.documentElement.style.setProperty('--hdrh',h.offsetHeight+'px');
@@ -1736,25 +1754,35 @@ function snapToQuestion(force){
   try{window.scrollTo({top:Math.max(0,y),behavior:'smooth'});}catch(e){window.scrollTo(0,Math.max(0,y));}
 }
 
-// Soft magnet: after a scroll stops, ease up to the toolbar row only if you stopped close above it (or just below it).
-// Scrolling further down to the options is never pulled back.
+// Soft magnet (phone, tablet, laptop, big screens): when a scroll stops close to a snap target, ease onto it.
+// Stopping far from every target leaves you where you are, so free reading is never fought.
 (function(){
-  var tmr=0,touching=false;
-  function rowTarget(){
-    var h=document.querySelector('#exam .hdr'),r=document.querySelector('#exam .qtag-row');
-    if(!h||!r)return null;
-    return r.getBoundingClientRect().top+window.pageYOffset-h.offsetHeight-4;
-  }
+  var tmr=0,touching=false,auto=0;
   function settle(){
-    if(touching||window.innerWidth>700||document.body.classList.contains('drawing'))return;
+    if(touching||document.body.classList.contains('drawing'))return;
     var ex=document.getElementById('exam');if(!ex||!ex.classList.contains('active'))return;
-    var t=rowTarget();if(t==null||t<=12)return;
-    var y=window.pageYOffset;
-    if(y>12&&y<t-2||y>t+2&&y<=t+28){
-      try{window.scrollTo({top:Math.max(0,t),behavior:'smooth'});}catch(e){window.scrollTo(0,Math.max(0,t));}
+    if(document.querySelector('#imgLb.show'))return;
+    var ae=document.activeElement;if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return;
+    var ts=snapTargets();if(!ts.length)return;
+    var y=window.pageYOffset,maxY=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
+    if(y>=maxY-2)return; // at the very bottom: leave it
+    if(y<=12)return; // at the very top: never pull down
+    var R=Math.max(40,Math.min(110,Math.round(window.innerHeight*0.11)));
+    var best=null,bd=1e9;
+    for(var i=0;i<ts.length;i++){
+      var t=Math.min(ts[i].t,maxY),d=Math.abs(t-y);
+      var lim=(ts[i].tb&&y<t)?Math.min(R,22):R; // above toolbar row / question first line: small catch zone
+      if(d<=lim&&d<bd){bd=d;best=t;}
     }
+    if(best==null||bd<=2)return;
+    if(y<=12&&best<=12)return;
+    auto=Date.now();
+    try{window.scrollTo({top:best,behavior:'smooth'});}catch(e){window.scrollTo(0,best);}
   }
-  window.addEventListener('scroll',function(){clearTimeout(tmr);tmr=setTimeout(settle,220);},{passive:true});
+  window.addEventListener('scroll',function(){
+    if(Date.now()-auto<700)return; // ignore scroll events caused by our own snap
+    clearTimeout(tmr);tmr=setTimeout(settle,240);
+  },{passive:true});
   document.addEventListener('touchstart',function(){touching=true;clearTimeout(tmr);},{passive:true});
   document.addEventListener('touchend',function(){touching=false;clearTimeout(tmr);tmr=setTimeout(settle,260);},{passive:true});
 })();
