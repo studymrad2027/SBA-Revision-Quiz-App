@@ -1731,15 +1731,15 @@ var _snapCur=-1;
 function snapTargets(){
   var h=document.querySelector('#exam .hdr');if(!h)return [];
   var hh=h.offsetHeight,base=window.pageYOffset,out=[];
-  function add(el,pad){
+  function add(el,pad,tb){
     if(!el||!el.getBoundingClientRect)return;
     var r=el.getBoundingClientRect();
     if(!r.width&&!r.height)return;
     if(el.id==='expBox'||el.id==='kpBox'){if(!el.classList.contains('show'))return;}
-    out.push(Math.max(0,Math.round(r.top+base-hh-(pad==null?4:pad))));
+    out.push({t:Math.max(0,Math.round(r.top+base-hh-(pad==null?4:pad))),tb:!!tb});
   }
-  add(document.querySelector('#exam .qtag-row'),4);
-  add(document.getElementById('qText'),8);
+  add(document.querySelector('#exam .qtag-row'),4,true); // toolbar row (small catch zone above it, normal below)
+  add(document.getElementById('qText'),8,true);
   add(document.querySelector('#optsList .opt'),8);
   add(document.getElementById('expBox'),8);
   add(document.getElementById('kpBox'),8);
@@ -1766,10 +1766,15 @@ function snapToQuestion(force){
     var ts=snapTargets();if(!ts.length)return;
     var y=window.pageYOffset,maxY=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
     if(y>=maxY-2)return; // at the very bottom: leave it
+    if(y<=12)return; // at the very top: never pull down
     var R=Math.max(40,Math.min(110,Math.round(window.innerHeight*0.11)));
     var best=null,bd=1e9;
-    for(var i=0;i<ts.length;i++){var t=Math.min(ts[i],maxY),d=Math.abs(t-y);if(d<bd){bd=d;best=t;}}
-    if(best==null||bd<=2||bd>R)return;
+    for(var i=0;i<ts.length;i++){
+      var t=Math.min(ts[i].t,maxY),d=Math.abs(t-y);
+      var lim=(ts[i].tb&&y<t)?Math.min(R,22):R; // above toolbar row / question first line: small catch zone
+      if(d<=lim&&d<bd){bd=d;best=t;}
+    }
+    if(best==null||bd<=2)return;
     if(y<=12&&best<=12)return;
     auto=Date.now();
     try{window.scrollTo({top:best,behavior:'smooth'});}catch(e){window.scrollTo(0,best);}
