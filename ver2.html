@@ -242,7 +242,7 @@ body.drawing #drawBar{display:flex;}
 .copy-btn.ok{border-color:#27ae60;color:#27ae60;}
 :root{--read:'Source Sans 3','Source Sans Pro','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;--qs:1;}
 .qtext{font-family:var(--read);font-size:calc(clamp(17px,2.4vw,21px) * var(--qs));line-height:1.65;font-weight:400;}
-.opt,.opt .opt-t{font-family:var(--read);font-size:calc(16px * var(--qs));line-height:1.5;}
+.opt,.opt .opt-t{font-family:var(--read);font-size:calc(clamp(18px,2.2vw,21px) * var(--qs));line-height:1.5;}
 .hint-txt{font-size:calc(13px * var(--qs));}
 .exp-txt,.exp-txt .tp-para,.kp-txt{font-size:calc(13px * var(--qs));}
 .rev-q{font-family:var(--read);line-height:1.6;}
@@ -300,18 +300,54 @@ body.drawing #drawBar{display:flex;}
 @keyframes elspin{to{transform:rotate(360deg);}}
 
 /* ===== auto-highlight ===== */
+/* ===== highlight editor ===== */
+/* highlight style 2: boxed */
+body.hl-box .hl{text-decoration:none;border:1.5px solid transparent;border-radius:4px;padding:1px 4px;}
+body.hl-box .hl-h{border-color:transparent;}
+body.hl-box .hl-ct{border-color:rgba(56,161,105,.95);}
+body.hl-box .hl-mri{border-color:rgba(0,172,193,.95);}
+body.hl-box .hl-us{border-color:rgba(49,130,206,.95);}
+body.hl-box .hl-nm{border-color:rgba(234,179,8,.98);}
+body.hl-box .hl-an{border-color:rgba(229,62,62,.95);}
+body.hl-box .hl-oi{border-color:rgba(159,122,234,.95);}
+body.hl-box .hl-q{border-color:#ff8c32;}
+body.hl-box .hl-xr{border-color:rgba(160,174,192,.95);}
+#hlBtn,#hlBtn2{position:relative;}
+#hlBtn[data-m]:not([data-m=""])::after,#hlBtn2[data-m]:not([data-m=""])::after{content:attr(data-m);position:absolute;right:2px;bottom:0;font-size:8px;line-height:1;font-weight:800;color:var(--gold);pointer-events:none;}
+
+.hl-none{outline:1px dashed rgba(128,128,128,.7);outline-offset:1px;border-radius:3px;}
+.hl-man{outline:1px dashed rgba(212,168,67,.8);outline-offset:1px;}
+.qtext.hl-editing{-webkit-user-select:text;user-select:text;cursor:text;padding:8px;border:1px dashed rgba(212,168,67,.4);border-radius:8px;}
+.hled-bar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:400;background:var(--bg2);border-top:1px solid var(--gold);box-shadow:0 -4px 16px rgba(0,0,0,.35);padding:8px 10px calc(8px + env(safe-area-inset-bottom));font-family:sans-serif;}
+body.hled .hled-bar{display:block;}
+body.hled{padding-bottom:150px;}
+.hled-in{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:7px;}
+.hled-top{font-size:11.5px;color:var(--grey);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;}
+.hled-top b{color:var(--gold);}
+.hled-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.hled-chips .hl,.hled-auto{border:1px solid transparent;padding:4px 10px;font-size:12px;font-weight:600;color:var(--tx);cursor:pointer;font-family:inherit;border-radius:6px;}
+.hled-auto{background:none;border-color:rgba(128,128,128,.5);color:var(--grey);}
+.hled-chips .hled-on{box-shadow:0 0 0 2px var(--gold);}
+.hled-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.hled-btns button{background:none;border:1px solid rgba(128,128,128,.45);color:var(--tx);padding:6px 12px;border-radius:8px;font-size:12.5px;cursor:pointer;font-family:inherit;}
+.hled-btns button:disabled{opacity:.4;cursor:default;}
+.hled-btns .hled-save{background:var(--gold);color:#111;border-color:var(--gold);font-weight:700;}
+body.hled #optsList,body.hled .qtag-btns,body.hled #navRow,body.hled .dots,body.hled #hintBtn,body.hled #exFoot{pointer-events:none;opacity:.4;}
+
 .hl{border-radius:3px;padding:0;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
-.hl-h{background:rgba(66,153,225,.20);}
-.hl-ct{background:rgba(237,137,54,.30);border-bottom:2px solid rgba(237,137,54,.85);}
-.hl-mri{background:rgba(159,122,234,.28);border-bottom:2px dashed rgba(159,122,234,.9);}
-.hl-us{background:rgba(56,178,172,.28);border-bottom:2px dotted rgba(56,178,172,.95);}
+.hl-h{background:rgba(140,148,160,.24);}
+.hl-ct{background:rgba(72,187,120,.28);text-decoration:underline;text-decoration-style:solid;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-skip-ink:auto;text-decoration-color:rgba(56,161,105,.95);}
+.hl-mri{background:rgba(0,188,212,.26);text-decoration:underline;text-decoration-style:solid;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-skip-ink:auto;text-decoration-color:rgba(0,172,193,.95);}
+.hl-us{background:rgba(66,153,225,.26);text-decoration:underline;text-decoration-style:solid;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-skip-ink:auto;text-decoration-color:rgba(49,130,206,.95);}
 .hl-xr{background:rgba(160,174,192,.32);border-bottom:2px double rgba(160,174,192,.95);}
-.hl-nm{background:rgba(237,100,166,.26);border-bottom:2px dashed rgba(237,100,166,.9);}
-.hl-an{background:rgba(229,62,62,.24);border-bottom:2px dotted rgba(229,62,62,.9);}
-.hl-oi{background:rgba(236,201,75,.26);border-bottom:2px solid rgba(236,201,75,.9);}
-.hl-q{background:rgba(212,175,55,.22);font-weight:700;text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:3px;}
-.hl-legend{display:flex;flex-wrap:wrap;gap:6px;margin:-8px 0 14px;font-family:sans-serif;font-size:10.5px;color:var(--grey);}
-.hl-legend .hl{padding:1px 7px;font-size:10.5px;font-weight:600;color:var(--tx);}
+.hl-nm{background:rgba(250,204,21,.28);text-decoration:underline;text-decoration-style:solid;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-skip-ink:auto;text-decoration-color:rgba(234,179,8,.98);}
+.hl-an{background:rgba(229,62,62,.26);text-decoration:underline;text-decoration-style:solid;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-skip-ink:auto;text-decoration-color:rgba(229,62,62,.95);}
+.hl-oi{background:rgba(159,122,234,.28);border-bottom:2px solid rgba(159,122,234,.95);}
+.hl-q{background:rgba(255,140,50,.28);font-weight:700;text-decoration:underline;text-decoration-color:#ff8c32;text-underline-offset:3px;}
+.hl-legend{display:flex;flex-wrap:wrap;gap:4px;margin:-8px 0 12px;font-family:sans-serif;font-size:8.5px;color:var(--grey);}
+.hl-legend .hl{padding:0 5px;font-size:8.5px;line-height:1.5;font-weight:600;color:var(--tx);text-decoration-thickness:1px;text-underline-offset:2px;border-bottom-width:1px;}
+body.hl-box .hl-legend .hl{padding:0 4px;border-width:1px;}
+#hlBtn{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
 .tsb.hl-on{color:var(--gold);border-color:var(--gold);}
 /* ===== voice (speak question / tap to answer) ===== */
 .vbar{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:10px;width:min(560px,calc(100% - 20px));z-index:60;background:var(--bg2);border:1px solid var(--gold);border-radius:12px;padding:8px 10px;box-shadow:0 6px 24px rgba(0,0,0,.45);font-family:sans-serif;}
@@ -482,7 +518,7 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
     <div class="divider"></div>
     <div class="qtag-row">
       <div class="sys-tag" id="qSys">Neuro</div>
-      <div class="tsz"><div class="tsgrp"><button type="button" class="tsb" id="tsMinus" aria-label="Smaller text" onclick="adjustTextSize(-1)">A&minus;</button><button type="button" class="tsb" id="tsPlus" aria-label="Larger text" onclick="adjustTextSize(1)">A+</button></div><button type="button" class="tsb" id="fontBtn" aria-label="Change font" onclick="cycleFont()">Sans</button><button type="button" class="tsb" id="hlBtn" aria-label="Toggle highlighting" title="Highlight history / findings / question (L)" onclick="toggleHL()">HL</button><button type="button" class="tsb" id="spkBtn" aria-label="Read aloud and answer by voice" title="Read aloud / answer by voice" onclick="voiceToggle()" style="display:none">&#128266;</button></div>
+      <div class="tsz"><div class="tsgrp"><button type="button" class="tsb" id="tsMinus" aria-label="Smaller text" onclick="adjustTextSize(-1)">A&minus;</button><button type="button" class="tsb" id="tsPlus" aria-label="Larger text" onclick="adjustTextSize(1)">A+</button></div><button type="button" class="tsb" id="fontBtn" aria-label="Change font" onclick="cycleFont()">Sans</button><button type="button" class="tsb" id="hlBtn" aria-label="Toggle highlighting" title="Tap: highlight off / 1 underline / 2 box (L). Hold: edit highlights (PIN)" onclick="hlBtnClick(event)" oncontextmenu="return false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:auto;pointer-events:none"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg></button><button type="button" class="tsb" id="spkBtn" aria-label="Read aloud and answer by voice" title="Read aloud / answer by voice" onclick="voiceToggle()" style="display:none">&#128266;</button></div>
       <div class="qtag-btns">
         <button type="button" class="btn-prev" id="qPrevBtn" onclick="prevQ()">Prev</button>
         <button type="button" class="btn-skip" id="qSkipBtn" onclick="skipQ()">Skip</button>
@@ -554,7 +590,7 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
       <button onclick="show('results')" style="background:var(--bg2);border:1px solid rgba(128,128,128,.2);border-radius:8px;padding:7px 14px;color:var(--grey);font-size:12px;font-weight:700;">&#8592; Results</button>
       <div style="font-size:15px;font-weight:700;color:var(--wh);">Full Answer Review</div>
-      <button type="button" class="tsb" id="hlBtn2" style="margin-left:auto" onclick="toggleHL()" title="Highlight on/off">HL</button>
+      <button type="button" class="tsb" id="hlBtn2" style="margin-left:auto" onclick="toggleHL()" title="Highlight on/off" aria-label="Highlight on/off"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:auto;pointer-events:none"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg></button>
     </div>
     <div id="reviewList"></div>
   </div>
@@ -1071,9 +1107,12 @@ function qHash(str){
 
 /* ===== auto-highlight engine ===== */
 var hlOn=true;
-try{var hv=localStorage.getItem('sba_hl_on');if(hv==='0')hlOn=false;}catch(e){}
-var HL_LABEL={h:'History',ct:'CT',mri:'MRI',us:'US',xr:'X-ray',nm:'Nuclear/PET',an:'Angio/IR',oi:'Imaging',q:'Asked'};
-var HL_TAGMAP={H:'h',HX:'h',HIST:'h',CT:'ct',MRI:'mri',MR:'mri',US:'us',USS:'us',XR:'xr',XRAY:'xr',CXR:'xr',NM:'nm',PET:'nm',AN:'an',ANGIO:'an',IR:'an',IMG:'oi',Q:'q',ASK:'q'};
+var hlBox=false; // false = underline style (1), true = box style (2)
+try{var hv=localStorage.getItem('sba_hl_on');if(hv==='0')hlOn=false;if(localStorage.getItem('sba_hl_style')==='box')hlBox=true;}catch(e){}
+function hlApplyStyle(){document.body.classList.toggle('hl-box',hlBox);}
+hlApplyStyle();
+var HL_LABEL={none:'No highlight',h:'History',ct:'CT',mri:'MRI',us:'US',xr:'X-ray',nm:'Nuclear/PET',an:'Angio/IR',oi:'Imaging',q:'Asked'};
+var HL_TAGMAP={H:'h',HX:'h',HIST:'h',CT:'ct',MRI:'mri',MR:'mri',US:'us',USS:'us',XR:'xr',XRAY:'xr',CXR:'xr',NM:'nm',PET:'nm',AN:'an',ANGIO:'an',IR:'an',IMG:'oi',Q:'q',ASK:'q',NONE:'none'};
 function stripHLMarkers(t){return String(t==null?'':t).replace(/\[\[([A-Za-z]{1,6}):([\s\S]*?)\]\]/g,function(m,tag,inner){return HL_TAGMAP[tag.toUpperCase()]?inner:m;});}
 var HL_RX_NM=/\b(PET|PET-?CT|scintigraph\w*|SPECT|DMSA|MAG-?3|MIBG|DOTATATE|HIDA|bone scan|V\/Q|isotope|nuclear|technetium|Tc-?99m|FDG|gallium|MUGA|radionuclide)\b/i;
 var HL_RX=[
@@ -1128,7 +1167,7 @@ function hlSegments(raw){
     if(!k)continue;
     any=true;
     addAuto(raw.slice(last,m.index));
-    segs.push({t:m[2],k:k});
+    segs.push({t:m[2],k:k,m:1});
     last=m.index+m[0].length;
   }
   addAuto(raw.slice(last));
@@ -1140,7 +1179,7 @@ function hlHTML(raw){ // returns {html, kinds}
   var segs=hlSegments(raw),h='',kinds=[];
   for(var i=0;i<segs.length;i++){
     var sg=segs[i];
-    if(!sg.k||!sg.t.trim()){h+=escTP(sg.t);continue;}
+    if(!sg.k||sg.k==='none'||!sg.t.trim()){h+=escTP(sg.t);continue;}
     var lead=sg.t.match(/^\s*/)[0],trail=sg.t.match(/\s*$/)[0];
     var core=sg.t.slice(lead.length,sg.t.length-trail.length);
     h+=escTP(lead)+'<span class="hl hl-'+sg.k+'" title="'+HL_LABEL[sg.k]+'">'+escTP(core)+'</span>'+escTP(trail);
@@ -1153,10 +1192,14 @@ function hlLegendHTML(kinds){
   for(var i=0;i<order.length;i++)if(kinds.indexOf(order[i])>=0)h+='<span class="hl hl-'+order[i]+'">'+HL_LABEL[order[i]]+'</span>';
   return h;
 }
-function updateHLBtn(){['hlBtn','hlBtn2'].forEach(function(id){var b=document.getElementById(id);if(b){b.classList.toggle('hl-on',hlOn);b.setAttribute('aria-pressed',hlOn?'true':'false');}});}
+function updateHLBtn(){['hlBtn','hlBtn2'].forEach(function(id){var b=document.getElementById(id);if(b){b.classList.toggle('hl-on',hlOn);b.setAttribute('aria-pressed',hlOn?'true':'false');b.setAttribute('data-m',hlOn?(hlBox?'2':'1'):'');}});}
 function toggleHL(){
-  hlOn=!hlOn;
-  try{localStorage.setItem('sba_hl_on',hlOn?'1':'0');}catch(e){}
+  // tap cycles: off -> 1 (underline) -> 2 (box) -> off
+  if(!hlOn){hlOn=true;hlBox=false;}
+  else if(!hlBox){hlBox=true;}
+  else{hlOn=false;hlBox=false;}
+  try{localStorage.setItem('sba_hl_on',hlOn?'1':'0');localStorage.setItem('sba_hl_style',hlBox?'box':'underline');}catch(e){}
+  hlApplyStyle();
   updateHLBtn();
   var ex=document.getElementById('exam');
   if(ex&&ex.classList.contains('active')&&qs&&qs.length){
@@ -1167,11 +1210,267 @@ function toggleHL(){
   var rv=document.getElementById('review');if(rv&&rv.classList.contains('active'))showReview();
 }
 function setQText(q){
+  if(hlEd.on){if(String(q.id)===hlEd.qid){hlEdRender();return;}hlEd.on=false;document.body.classList.remove('hled');}
   var r=hlHTML(q.q),el=document.getElementById('qText'),lg=document.getElementById('hlLegend');
   el.innerHTML=r.html;
   if(lg){if(hlOn&&r.kinds.length){lg.innerHTML=hlLegendHTML(r.kinds);lg.style.display='';}else{lg.innerHTML='';lg.style.display='none';}}
 }
 setTimeout(updateHLBtn,0);
+
+/* ===== highlight editor: fine-tune the highlight colours of one question and save them to Supabase ===== */
+var HL_TAG_OF={none:'NONE',h:'H',ct:'CT',mri:'MRI',us:'US',xr:'XR',nm:'NM',an:'AN',oi:'IMG',q:'Q'};
+var HL_ED_ORDER=['h','ct','mri','us','xr','nm','an','oi','q'];
+var hlPinOk=false;
+var hlEd={on:false,qid:'',plain:'',kind:[],man:[],auto:[],hist:[],brush:null,sel:null,down:false,tmr:0,busy:false};
+function hlEdLoad(raw){
+  var segs=hlSegments(raw),plain='',kind=[],man=[],i,c;
+  for(i=0;i<segs.length;i++){for(c=0;c<segs[i].t.length;c++){kind.push(segs[i].k||null);man.push(!!segs[i].m);}plain+=segs[i].t;}
+  var auto=[],a=hlAuto(plain);
+  for(i=0;i<a.length;i++)for(c=0;c<a[i].t.length;c++)auto.push(a[i].k||null);
+  while(auto.length<plain.length)auto.push(null);
+  hlEd.plain=plain;hlEd.kind=kind;hlEd.man=man;hlEd.auto=auto;hlEd.hist=[];
+}
+function hlEdEmit(prom){ // plain text + manual runs -> text with [[CT:...]] markers
+  var p=hlEd.plain,out='',i=0,n=p.length;
+  function eff(x){return hlEd.man[x]||(prom&&prom[x]);}
+  while(i<n){
+    if(!eff(i)){var j0=i;while(j0<n&&!eff(j0))j0++;out+=p.slice(i,j0);i=j0;continue;}
+    var k=hlEd.kind[i],j=i;
+    for(;;){
+      while(j<n&&eff(j)&&hlEd.kind[j]===k)j++;
+      var m2=j;while(m2<n&&/\s/.test(p[m2]))m2++;
+      if(m2>j&&m2<n&&eff(m2)&&hlEd.kind[m2]===k&&k){j=m2;continue;} // join runs of one colour separated only by spaces
+      break;
+    }
+    var a=i,b=j;
+    while(a<b&&/\s/.test(p[a]))a++;
+    while(b>a&&/\s/.test(p[b-1]))b--;
+    out+=p.slice(i,a);
+    if(b>a){var inner=p.slice(a,b);out+=(!k||inner.indexOf(']]')>=0)?inner:'[['+HL_TAG_OF[k]+':'+inner+']]';}
+    out+=p.slice(b,j);
+    i=j;
+  }
+  return out;
+}
+// Build the text to store. The colours you see must be exactly what loads next time, so any untouched text whose
+// automatic colour would change because a marker split its sentence is pinned with its own marker too.
+function hlEdBuild(){
+  var prom={};
+  for(var it=0;it<6;it++){
+    var raw=hlEdEmit(prom),segs=hlSegments(raw),txt='',bad=0,pos=0,s,c;
+    for(s=0;s<segs.length;s++)txt+=segs[s].t;
+    if(txt!==hlEd.plain)return null;
+    for(s=0;s<segs.length;s++)for(c=0;c<segs[s].t.length;c++,pos++){
+      if(/\s/.test(segs[s].t[c]))continue;
+      if((segs[s].k||null)!==(hlEd.kind[pos]||null)){prom[pos]=true;bad++;}
+    }
+    if(!bad)return raw;
+  }
+  return null;
+}
+function hlEdEnsurePanel(){
+  if(document.getElementById('hlEdBar'))return;
+  var d=document.createElement('div');d.id='hlEdBar';d.className='hled-bar';
+  var chips='';
+  for(var i=0;i<HL_ED_ORDER.length;i++)chips+='<button type="button" class="hl hl-'+HL_ED_ORDER[i]+'" data-k="'+HL_ED_ORDER[i]+'" onmousedown="event.preventDefault()" onclick="hlEdChip(\''+HL_ED_ORDER[i]+'\')">'+HL_LABEL[HL_ED_ORDER[i]]+'</button>';
+  chips+='<button type="button" class="hled-auto" data-k="none" onmousedown="event.preventDefault()" onclick="hlEdChip(\'none\')" title="Remove the highlight from the selected words">Clear</button>';
+  chips+='<button type="button" class="hled-auto" data-k="auto" onmousedown="event.preventDefault()" onclick="hlEdChip(\'auto\')" title="Put the selected words back to automatic colouring">Auto</button>';
+  d.innerHTML='<div class="hled-in"><div class="hled-top"><b>Edit highlights</b><span id="hlEdHelp">Pick a colour, then select words in the question.</span></div>'
+    +'<div class="hled-chips">'+chips+'</div>'
+    +'<div class="hled-btns"><button type="button" id="hlEdUndo" onclick="hlEdUndo()">Undo</button><button type="button" id="hlEdClearAll" onclick="hlEdClearAll()">Clear all</button><button type="button" id="hlEdReset" onclick="hlEdResetAll()">Reset all to auto</button><span style="flex:1"></span><button type="button" id="hlEdExit" onclick="hlEdExit()">Exit</button><button type="button" id="hlEdSave" class="hled-save" onclick="hlEdSave()">Save &amp; Exit</button></div></div>';
+  document.body.appendChild(d);
+}
+function hlEdMsg(t,bad){var h=document.getElementById('hlEdHelp');if(h){h.textContent=t;h.style.color=bad?'#e57373':'';}}
+function hlEdRefreshUI(){
+  var bar=document.getElementById('hlEdBar');if(!bar)return;
+  var cs=bar.querySelectorAll('[data-k]');
+  for(var i=0;i<cs.length;i++)cs[i].classList.toggle('hled-on',cs[i].getAttribute('data-k')===hlEd.brush);
+  var u=document.getElementById('hlEdUndo');if(u)u.disabled=!hlEd.hist.length||hlEd.busy;
+  ['hlEdClearAll','hlEdReset','hlEdExit','hlEdSave'].forEach(function(id){var b=document.getElementById(id);if(b)b.disabled=hlEd.busy;});
+}
+function hlEdRender(){
+  var el=document.getElementById('qText'),lg=document.getElementById('hlLegend');
+  if(!el)return;
+  el.textContent='';el.classList.add('hl-editing');
+  if(lg){lg.innerHTML='';lg.style.display='none';}
+  var p=hlEd.plain,n=p.length,i=0;
+  function tx(s){el.appendChild(document.createTextNode(s));}
+  while(i<n){
+    var k=hlEd.kind[i],m=!!hlEd.man[i],j=i;
+    while(j<n&&hlEd.kind[j]===k&&!!hlEd.man[j]===m)j++;
+    var seg=p.slice(i,j);
+    if(!k||!seg.trim())tx(seg);
+    else if(k==='none'){var sn=document.createElement('span');sn.className='hl-none';sn.title='No highlight (set by you)';sn.textContent=seg;el.appendChild(sn);}
+    else{
+      var lead=seg.match(/^\s*/)[0],trail=seg.match(/\s*$/)[0],core=seg.slice(lead.length,seg.length-trail.length);
+      if(lead)tx(lead);
+      var sp=document.createElement('span');sp.className='hl hl-'+k+(m?' hl-man':'');sp.title=HL_LABEL[k]+(m?' (set by you)':' (automatic)');sp.textContent=core;el.appendChild(sp);
+      if(trail)tx(trail);
+    }
+    i=j;
+  }
+  hlEdRefreshUI();
+}
+function hlEdPush(){hlEd.hist.push({k:hlEd.kind.slice(),m:hlEd.man.slice()});if(hlEd.hist.length>60)hlEd.hist.shift();}
+function hlEdApply(a,b,k){ // k = kind letter, or null for "back to automatic"
+  var p=hlEd.plain;a=Math.max(0,a);b=Math.min(p.length,b);
+  while(a<b&&/\s/.test(p[a]))a++;
+  while(b>a&&/\s/.test(p[b-1]))b--;
+  if(b<=a)return false;
+  hlEdPush();
+  for(var i=a;i<b;i++){
+    if(k===null){hlEd.kind[i]=hlEd.auto[i];hlEd.man[i]=false;}
+    else{hlEd.kind[i]=k;hlEd.man[i]=true;}
+  }
+  hlEdRender();
+  return true;
+}
+function hlEdUndo(){var h=hlEd.hist.pop();if(!h)return;hlEd.kind=h.k;hlEd.man=h.m;hlEdRender();}
+function hlEdClearAll(){
+  hlEdPush();
+  for(var i=0;i<hlEd.plain.length;i++){hlEd.kind[i]='none';hlEd.man[i]=true;}
+  hlEdRender();
+}
+function hlEdResetAll(){
+  hlEdPush();
+  for(var i=0;i<hlEd.plain.length;i++){hlEd.kind[i]=hlEd.auto[i];hlEd.man[i]=false;}
+  hlEdRender();
+}
+function hlEdClearSel(){hlEd.sel=null;try{var s=window.getSelection();if(s)s.removeAllRanges();}catch(e){}}
+function hlEdChip(k){
+  if(!hlEd.on||hlEd.busy)return;
+  hlEd.brush=k;
+  if(hlEd.sel){var s=hlEd.sel;hlEdApply(s.a,s.b,k==='auto'?null:k);hlEdClearSel();hlEdMsg('Applied. Select more words, or Save & Exit.');}
+  else hlEdMsg(k==='auto'?'Select words to put back to automatic.':'Now select the words to colour as '+HL_LABEL[k]+'.');
+  hlEdRefreshUI();
+}
+function hlEdCaptureSel(){
+  if(!hlEd.on)return;
+  var root=document.getElementById('qText'),s=window.getSelection();
+  if(!root||!s||!s.rangeCount||s.isCollapsed){hlEd.sel=null;return;}
+  var r=s.getRangeAt(0);
+  if(!r.intersectsNode(root)){hlEd.sel=null;return;}
+  function off(node,o){var x=document.createRange();x.selectNodeContents(root);x.setEnd(node,o);return x.toString().length;}
+  var a=root.contains(r.startContainer)?off(r.startContainer,r.startOffset):0;
+  var b=root.contains(r.endContainer)?off(r.endContainer,r.endOffset):hlEd.plain.length;
+  if(b<=a){hlEd.sel=null;return;}
+  hlEd.sel={a:a,b:b};
+}
+function hlEdAutoApply(){
+  clearTimeout(hlEd.tmr);
+  if(!hlEd.on||hlEd.busy||!hlEd.brush||!hlEd.sel||hlEd.down)return;
+  var s=hlEd.sel;
+  if(hlEdApply(s.a,s.b,hlEd.brush==='auto'?null:hlEd.brush)){hlEdClearSel();hlEdMsg('Applied. Select more words, or Save & Exit.');}
+}
+document.addEventListener('selectionchange',function(){
+  if(!hlEd.on)return;
+  hlEdCaptureSel();
+  clearTimeout(hlEd.tmr);
+  if(hlEd.sel&&hlEd.brush&&!hlEd.down)hlEd.tmr=setTimeout(hlEdAutoApply,900);
+});
+document.addEventListener('pointerdown',function(e){
+  if(hlEd.on&&e.target&&e.target.closest&&e.target.closest('#qText')){hlEd.down=true;clearTimeout(hlEd.tmr);}
+},true);
+function hlEdPointerUp(e){
+  if(!hlEd.on||!hlEd.down)return;
+  hlEd.down=false;
+  if(e&&e.pointerType==='mouse'){setTimeout(function(){hlEdCaptureSel();hlEdAutoApply();},0);}
+  else{clearTimeout(hlEd.tmr);hlEd.tmr=setTimeout(function(){hlEdCaptureSel();hlEdAutoApply();},800);}
+}
+document.addEventListener('pointerup',hlEdPointerUp,true);
+document.addEventListener('pointercancel',hlEdPointerUp,true);
+
+
+// HL button: a tap toggles highlighting, holding it (about 0.6 s) opens the highlight editor
+var hlHoldFired=false;
+function hlBtnClick(e){
+  if(hlHoldFired){hlHoldFired=false;if(e&&e.preventDefault)e.preventDefault();return;}
+  if(hlEd.on)return;
+  if(e&&(e.shiftKey||e.altKey)){hlEdStart();return;}
+  toggleHL();
+}
+(function(){
+  var tmr=0,sx=0,sy=0;
+  function stop(){clearTimeout(tmr);tmr=0;}
+  document.addEventListener('pointerdown',function(e){
+    var b=e.target&&e.target.closest?e.target.closest('#hlBtn'):null;
+    if(!b)return;
+    hlHoldFired=false;sx=e.clientX;sy=e.clientY;stop();
+    tmr=setTimeout(function(){tmr=0;hlHoldFired=true;try{if(navigator.vibrate)navigator.vibrate(18);}catch(x){}hlEdStart();},600);
+  },true);
+  document.addEventListener('pointermove',function(e){if(tmr&&(Math.abs(e.clientX-sx)>10||Math.abs(e.clientY-sy)>10))stop();},true);
+  ['pointerup','pointercancel'].forEach(function(n){document.addEventListener(n,function(){stop();if(hlHoldFired)setTimeout(function(){hlHoldFired=false;},400);},true);});
+})();
+function hlEdStart(){
+  if(hlEd.on)return;
+  var ex=document.getElementById('exam');
+  if(!ex||!ex.classList.contains('active')||!qs||!qs.length)return;
+  if(typeof mode!=='undefined'&&mode==='timed'){alert('Highlight editing is not available during a timed exam.');return;}
+  var q=qs[cur];
+  if(!q||!q.id){alert('Reload the app first so this question can be updated online.');return;}
+  if(!(hlPinOk||imgPinOk||editMode)){
+    var p=prompt('Enter PIN to edit highlights');
+    if(p===null)return;
+    if(String(p).trim()!==EDIT_PIN){alert('Wrong PIN.');return;}
+  }
+  hlPinOk=true;
+  if(typeof drawMode!=='undefined'&&drawMode&&typeof toggleDraw==='function')toggleDraw();
+  hlEdEnsurePanel();
+  hlEdLoad(q.q);
+  hlEd.on=true;hlEd.qid=String(q.id);hlEd.brush=null;hlEd.sel=null;hlEd.down=false;hlEd.busy=false;
+  document.body.classList.add('hled');
+  var b=document.getElementById('hlEditBtn');if(b)b.classList.add('hl-on');
+  hlEdMsg('Pick a colour, then select words in the question.');
+  hlEdRender();
+}
+function hlEdClose(){
+  clearTimeout(hlEd.tmr);
+  hlEd.on=false;hlEd.sel=null;hlEd.down=false;hlEd.busy=false;
+  document.body.classList.remove('hled');
+  var b=document.getElementById('hlEditBtn');if(b)b.classList.remove('hl-on');
+  var el=document.getElementById('qText');if(el)el.classList.remove('hl-editing');
+  try{var s=window.getSelection();if(s)s.removeAllRanges();}catch(e){}
+  var ex=document.getElementById('exam');
+  if(ex&&ex.classList.contains('active')&&qs&&qs.length)renderQ();
+}
+function hlEdExit(){
+  if(hlEd.busy)return;
+  if(hlEd.hist.length&&!confirm('Exit without saving? Your highlight changes will be lost.'))return;
+  hlEdClose();
+}
+function hlEdSave(){
+  if(hlEd.busy||!hlEd.on)return;
+  var q=qs[cur];
+  if(!q||String(q.id)!==hlEd.qid){hlEdClose();return;}
+  var raw=hlEdBuild();
+  if(raw==null){hlEdMsg('These highlights could not be stored cleanly (the text may contain "]]"). Nothing was saved.',true);return;}
+  if(raw===q.q){hlEdClose();return;}
+  hlEd.busy=true;hlEdRefreshUI();hlEdMsg('Saving to the database...');
+  var id=encodeURIComponent(q.id);
+  fetch(SUPABASE_URL+'/rest/v1/questions?select=question&id=eq.'+id,{headers:supaHeaders(),cache:'no-store'})
+    .then(function(r){if(!r.ok)throw new Error('could not read the question (HTTP '+r.status+')');return r.json();})
+    .then(function(rows){
+      if(!rows||!rows.length)throw new Error('this question was not found online');
+      var dbPlain=stripHLMarkers(String(rows[0].question==null?'':rows[0].question).replace(/\r/g,'').trim());
+      if(dbPlain!==hlEd.plain)throw new Error('the question text was changed online, so nothing was saved. Reload the app and try again');
+      return fetch(SUPABASE_URL+'/rest/v1/questions?id=eq.'+id,{method:'PATCH',headers:supaHeaders({'Prefer':'return=representation'}),body:JSON.stringify({question:raw})});
+    })
+    .then(function(r){if(!r.ok)throw new Error('the database refused the update (HTTP '+r.status+')');return r.json();})
+    .then(function(d){
+      if(!d||!d.length)throw new Error('the database blocked the update. In the Supabase SQL Editor run: create policy "allow update questions" on public.questions for update using (true) with check (true);');
+      for(var i=0;i<SETS.length;i++)if(Array.isArray(SETS[i]))SETS[i].forEach(function(x){if(String(x.id)===String(q.id))x.q=raw;});
+      qs.forEach(function(x){if(String(x.id)===String(q.id))x.q=raw;});
+      q.q=raw;
+      try{localStorage.removeItem('sba_q_cache');}catch(e){}
+      drawStore={};drawHist={}; // the question text layout may shift, so old pen marks would no longer line up
+      hlEdClose();
+      if(typeof dRedraw==='function')try{dRedraw();}catch(e){}
+    })
+    .catch(function(err){
+      hlEd.busy=false;hlEdRefreshUI();
+      hlEdMsg('Not saved: '+(err&&err.message?err.message:'connection error')+'.',true);
+    });
+}
 
 /* ===== voice: read the question aloud, tap the mic to answer ===== */
 var voiceLastState='',voiceOn=false,voiceJustAnswered=false,voiceTok=0,voiceRec=null,voiceListening=false,voicePending=null;
@@ -1759,7 +2058,7 @@ function snapToQuestion(force){
 (function(){
   var tmr=0,touching=false,auto=0;
   function settle(){
-    if(touching||document.body.classList.contains('drawing'))return;
+    if(touching||document.body.classList.contains('drawing')||document.body.classList.contains('hled'))return;
     var ex=document.getElementById('exam');if(!ex||!ex.classList.contains('active'))return;
     if(document.querySelector('#imgLb.show'))return;
     var ae=document.activeElement;if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return;
@@ -2786,6 +3085,7 @@ document.addEventListener('keydown',function(e){
   var t=e.target;
   if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;
   if(!document.getElementById('exam').classList.contains('active'))return;
+  if(hlEd.on)return;
   if(document.getElementById('hcov').classList.contains('show'))return;
   var k=e.key;
   if(document.getElementById('timeup-ov').classList.contains('show')){
@@ -3280,7 +3580,7 @@ function initDraw(){
   dCv.addEventListener('pointerup',end);
   dCv.addEventListener('pointercancel',end);
 }
-function goHome(){stopTimer();document.getElementById('timeup-ov').classList.remove('show');buildSetGrid();show('home');loadSavedProgressList();}
+function goHome(){if(hlEd.on)hlEdClose();stopTimer();document.getElementById('timeup-ov').classList.remove('show');buildSetGrid();show('home');loadSavedProgressList();}
 buildSetGrid();
 initCountdown();
 initDraw();
