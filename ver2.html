@@ -223,6 +223,8 @@ button{font-family:Georgia,serif;cursor:pointer;}
 .opt.out .opt-lbl,.opt.out .opt-t{opacity:.4;}
 .opt.out .opt-t{text-decoration:line-through;text-decoration-color:#e74c3c;text-decoration-thickness:2px;}
 .opt.out .opt-x{color:#e74c3c;background:rgba(231,76,60,.15);border-color:rgba(231,76,60,.6);}
+.opt-x{transition:color .15s,background .15s,border-color .15s,box-shadow .15s;}
+@media (hover:hover){.opt-x:hover{color:#ff5a4a;background:rgba(231,76,60,.2);border-color:rgba(231,76,60,.85);box-shadow:0 0 9px rgba(231,76,60,.65);}}
 .ebody{position:relative;}
 #drawCv{position:absolute;left:0;top:0;z-index:40;pointer-events:none;touch-action:none;display:none;}
 body.drawing #drawCv{pointer-events:auto;}
@@ -242,7 +244,7 @@ body.drawing #drawBar{display:flex;}
 .copy-btn.ok{border-color:#27ae60;color:#27ae60;}
 :root{--read:'Source Sans 3','Source Sans Pro','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;--qs:1;}
 .qtext{font-family:var(--read);font-size:calc(clamp(17px,2.4vw,21px) * var(--qs));line-height:1.65;font-weight:400;}
-.opt,.opt .opt-t{font-family:var(--read);font-size:calc(clamp(18px,2.2vw,21px) * var(--qs));line-height:1.5;}
+.opt,.opt .opt-t{font-family:var(--read);font-size:calc(16px * var(--qs));line-height:1.5;}
 .hint-txt{font-size:calc(13px * var(--qs));}
 .exp-txt,.exp-txt .tp-para,.kp-txt{font-size:calc(13px * var(--qs));}
 .rev-q{font-family:var(--read);line-height:1.6;}
@@ -362,6 +364,32 @@ body.hl-box .hl-legend .hl{padding:0 4px;border-width:1px;}
 @keyframes vpulse{50%{opacity:.6;}}
 body.voice-open #exam{padding-bottom:190px;}
 .vsel{width:100%;margin-top:7px;background:var(--bg3,rgba(128,128,128,.15));color:var(--tx);border:1px solid rgba(128,128,128,.35);border-radius:8px;padding:7px 8px;font-size:12px;font-family:sans-serif;}
+
+/* ===== voice: floating orb that opens into a two-row pill ===== */
+#voiceBar{display:none;position:fixed;left:auto;right:12px;bottom:12px;transform:none;width:52px;height:52px;padding:0;border-radius:26px;overflow:hidden;z-index:60;background:var(--bg2);border:1px solid var(--gold);box-shadow:0 6px 20px rgba(0,0,0,.5);transition:width .3s cubic-bezier(.2,.8,.2,1),height .3s cubic-bezier(.2,.8,.2,1),border-radius .3s ease;}
+#voiceBar.show{display:block;}
+#voiceBar.open{width:min(430px,calc(100vw - 24px));height:100px;border-radius:32px;}
+#voiceBar .vwave{position:absolute;left:5px;top:5px;width:40px;height:40px;margin:0;transition:left .3s ease,top .3s ease;}
+#voiceBar.open .vwave{left:10px;top:9px;}
+#vOrb{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;border-radius:inherit;z-index:3;cursor:pointer;padding:0;}
+#voiceBar.open #vOrb{display:none;}
+#voiceBar .vrow1,#voiceBar .vrow2{position:absolute;right:0;width:min(430px,calc(100vw - 24px));box-sizing:border-box;opacity:0;pointer-events:none;transition:opacity .1s ease;font-family:sans-serif;}
+#voiceBar.open .vrow1,#voiceBar.open .vrow2{opacity:1;pointer-events:auto;transition:opacity .2s ease .12s;}
+#voiceBar .vrow1{top:9px;height:40px;padding:0 10px 0 60px;display:flex;align-items:center;gap:8px;}
+#voiceBar .vrow2{top:54px;height:40px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;}
+#voiceBar .vstat{flex:1;min-width:0;margin:0;min-height:0;font-size:11.5px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.vib{width:34px;height:34px;border-radius:50%;border:1px solid rgba(128,128,128,.35);background:rgba(128,128,128,.12);color:var(--tx);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;font:700 11px sans-serif;flex:none;}
+.vib.sm{width:28px;height:28px;}
+.vib.mic{width:40px;height:40px;background:var(--gold);border-color:var(--gold);color:#0d1b2a;}
+.vib.mic.live{background:#e74c3c;border-color:#e74c3c;color:#fff;animation:vpulse 1s infinite;}
+.vic{width:18px;height:18px;display:block;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;}
+.vib.sm .vic{width:16px;height:16px;}
+#vVoicePop{display:none;position:fixed;right:12px;bottom:120px;width:min(430px,calc(100vw - 24px));box-sizing:border-box;z-index:61;background:var(--bg2);border:1px solid var(--gold);border-radius:12px;padding:6px;box-shadow:0 6px 20px rgba(0,0,0,.5);}
+#vVoicePop.show{display:block;}
+#vVoicePop .vsel{margin:0;width:100%;}
+body.voice-open #exam{padding-bottom:125px;}
+body.voice-open.voice-mini #exam{padding-bottom:80px;}
+@media (prefers-reduced-motion:reduce){#voiceBar,#voiceBar .vwave,#voiceBar .vrow1,#voiceBar .vrow2{transition:none;}}
 /* ===== voice wave + button glow / press feedback ===== */
 @media (hover:hover){
   button:not(:disabled):not(.dc):hover,.opt:hover,.set-card:hover,.grp-card:hover{box-shadow:0 0 0 1px rgba(212,168,67,.55),0 0 14px rgba(212,168,67,.45);filter:brightness(1.08);}
@@ -546,15 +574,19 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
     <div id="imgLb" onclick="imgClose()"><span class="lb-x">&#10005;</span><img alt=""></div>
     <div class="nav" id="navRow"></div>
     <div class="vbar" id="voiceBar">
-      <div class="vtop"><canvas class="vwave" id="vWave" aria-hidden="true"></canvas><div class="vstat" id="vStat">Voice ready</div><button type="button" class="vbtn x" aria-label="Close voice panel" onclick="voiceClose()">&#10005;</button></div>
-      <div class="vbtns">
-        <button type="button" class="vbtn mic" id="vMic" onclick="voiceMicTap()">&#127908; Tap to answer</button>
-        <button type="button" class="vbtn" id="vRep" onclick="voiceRepeat()">&#8635; Read again</button>
-        <button type="button" class="vbtn" id="vStop" onclick="voiceStopTap()">&#9209; Stop</button>
-        <button type="button" class="vbtn" id="vRate" onclick="voiceCycleRate()">1x</button>
+      <canvas class="vwave" id="vWave" aria-hidden="true"></canvas>
+      <button type="button" id="vOrb" aria-label="Open voice controls" onclick="voiceSetOpen(true)"></button>
+      <div class="vrow1"><div class="vstat" id="vStat">Voice ready</div><button type="button" class="vib sm" aria-label="Fold into a small orb" title="Fold" onclick="voiceSetOpen(false)"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>
+      <div class="vrow2">
+        <button type="button" class="vib" id="vRep" aria-label="Read again" title="Read again" onclick="voiceRepeat()"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
+        <button type="button" class="vib" id="vStop" aria-label="Stop" title="Stop" onclick="voiceStopTap()"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
+        <button type="button" class="vib mic" id="vMic" aria-label="Tap to answer" title="Tap to answer" onclick="voiceMicTap()"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg></button>
+        <button type="button" class="vib" id="vRate" aria-label="Reading speed" title="Reading speed" onclick="voiceCycleRate()">1x</button>
+        <button type="button" class="vib" id="vVoiceBtn" aria-label="Choose voice" title="Choose voice" onclick="voicePopToggle()"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></button>
+        <button type="button" class="vib" aria-label="Close voice panel" title="Close" onclick="voiceClose()"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
-      <select class="vsel" id="vVoice" aria-label="Choose voice" onchange="voicePick(this.value)"></select>
     </div>
+    <div id="vVoicePop"><select class="vsel" id="vVoice" aria-label="Choose voice" onchange="voicePick(this.value)"></select></div>
     <div class="kb-hint">&#8593; &#8595; choose &middot; Enter select / next &middot; A&ndash;E answer &middot; &#8592; clear / back &middot; &#8594; rule out / next &middot; X toggle &middot; S skip &middot; H hint</div>
     <button type="button" class="copy-btn" id="copyQBtn" onclick="copyQuestion()">Copy question &amp; options</button>
   </div>
@@ -1608,8 +1640,8 @@ function voiceResultText(q,mine){
 }
 function voiceReadQuestion(){
   var q=qs[cur];if(!q)return;
-  vStatus('&#128266; Reading the question&hellip; tap <b>Tap to answer</b> any time.');
-  voiceSpeak(voiceQuestionText(q),function(){vStatus('Ready. Tap <b>Tap to answer</b> and say A&ndash;E, 1&ndash;5 or alpha&hellip;eagle.');});
+  vStatus('&#128266; Reading the question&hellip; tap the <b>mic</b> any time.');
+  voiceSpeak(voiceQuestionText(q),function(){vStatus('Ready. Tap the <b>mic</b> and say A&ndash;E, 1&ndash;5 or alpha&hellip;eagle.');});
 }
 function voiceReadResult(){
   var q=qs[cur];if(!q)return;
@@ -1628,15 +1660,28 @@ function voiceAfterRender(){
   voiceStopListen();
   if(voiceJustAnswered){voiceJustAnswered=false;voiceReadResult();}
   else if(ans[cur]===null||ans[cur]===undefined)voiceReadQuestion();
-  else{voiceStopSpeech();vStatus('Answered. Tap <b>Read again</b> to hear the explanation.');}
+  else{voiceStopSpeech();vStatus('Answered. Tap <b>&#8635;</b> to hear the explanation.');}
 }
+var voiceOpenPref=true;
+try{if(localStorage.getItem('sba_voice_open')==='0')voiceOpenPref=false;}catch(e){}
+function voiceSetOpen(o,noSave){
+  var bar=document.getElementById('voiceBar');if(!bar)return;
+  if(!noSave){voiceOpenPref=o;try{localStorage.setItem('sba_voice_open',o?'1':'0');}catch(e){}}
+  bar.classList.toggle('open',!!o);
+  document.body.classList.toggle('voice-mini',!o);
+  if(!o){var p=document.getElementById('vVoicePop');if(p)p.classList.remove('show');}
+}
+function voicePopToggle(){var p=document.getElementById('vVoicePop');if(p)p.classList.toggle('show');}
+var VMIC_ICON='<svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>';
+function voiceMicUI(live){var m=document.getElementById('vMic');if(!m)return;m.classList.toggle('live',!!live);m.title=live?'Listening (tap to stop)':'Tap to answer';m.setAttribute('aria-label',m.title);m.innerHTML=VMIC_ICON;}
 function voiceToggle(){
   if(!VSYN)return;
   if(voiceOn){voiceClose();return;}
   if(mode==='timed'){alert('Voice is turned off in Timed mode.');return;}
   voiceOn=true;voiceLastState=voiceStateKey();
   var b=document.getElementById('spkBtn');if(b)b.classList.add('hl-on');
-  document.getElementById('voiceBar').classList.add('show');document.body.classList.add('voice-open');waveSize();waveSet('idle');
+  document.getElementById('voiceBar').classList.add('show');document.body.classList.add('voice-open');document.body.classList.toggle('voice-mini',!voiceOpenPref);waveSize();waveSet('idle');
+  if(voiceOpenPref)requestAnimationFrame(function(){requestAnimationFrame(function(){if(voiceOn)voiceSetOpen(true,true);});});
   if(ans[cur]===null||ans[cur]===undefined)voiceReadQuestion();
   else voiceReadResult();
 }
@@ -1644,9 +1689,9 @@ function voiceClose(){
   voiceOn=false;voiceJustAnswered=false;voiceLastState='';
   voiceCancelPending();voiceStopListen();voiceStopSpeech();
   var b=document.getElementById('spkBtn');if(b)b.classList.remove('hl-on');
-  var bar=document.getElementById('voiceBar');if(bar)bar.classList.remove('show');document.body.classList.remove('voice-open');
+  var bar=document.getElementById('voiceBar');if(bar)bar.classList.remove('show','open');document.body.classList.remove('voice-open','voice-mini');var vp=document.getElementById('vVoicePop');if(vp)vp.classList.remove('show');
 }
-function voiceStopTap(){voiceCancelPending();voiceStopListen();voiceStopSpeech();vStatus('Stopped. Tap <b>Read again</b> or <b>Tap to answer</b>.');}
+function voiceStopTap(){voiceCancelPending();voiceStopListen();voiceStopSpeech();vStatus('Stopped. Tap <b>&#8635;</b> or the <b>mic</b>.');}
 function voiceRepeat(){
   voiceCancelPending();voiceStopListen();
   if(ans[cur]===null||ans[cur]===undefined)voiceReadQuestion();else voiceReadResult();
@@ -1684,7 +1729,7 @@ function voiceStopListen(){
   voiceListening=false;
   voiceClearTimers();
   if(vWave.state==='listen'||vWave.state==='voice')waveSet('idle');
-  var m=document.getElementById('vMic');if(m){m.classList.remove('live');m.innerHTML='&#127908; Tap to answer';}
+  voiceMicUI(false);
   if(voiceRec){try{voiceRec.onresult=voiceRec.onerror=voiceRec.onend=voiceRec.onspeechstart=voiceRec.onspeechend=null;voiceRec.abort();}catch(e){}voiceRec=null;}
 }
 function voiceCancelPending(){if(voicePending){clearTimeout(voicePending);voicePending=null;}}
@@ -1699,16 +1744,16 @@ function voiceMicTap(){
   rec.lang='en-GB';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=5;
   voiceListening=true;
   waveSet('listen');
-  var m=document.getElementById('vMic');if(m){m.classList.add('live');m.innerHTML='&#9209; Listening&hellip; (tap to stop)';}
+  voiceMicUI(true);
   vStatus('&#127908; Listening&hellip; say <b>A&ndash;E</b>, <b>1&ndash;5</b> or <b>alpha&hellip;eagle</b> (or next / repeat / skip).');
   var heardAny=false,deadline=Date.now()+V_MAX,restarts=0,lastFull='',lastCmd=null;
   function finish(cmd,text){voiceStopListen();voiceHandle(cmd,text);}
   function giveUp(msg){voiceStopListen();vStatus(msg);}
   voiceTimers.max=setTimeout(function(){
     if(!voiceListening)return;
-    if(lastCmd)finish(lastCmd,lastFull);else giveUp('Time is up'+(lastFull?' &ndash; I heard &ldquo;'+escTP(lastFull)+'&rdquo; but could not match it':'')+'. Tap <b>Tap to answer</b> and try again.');
+    if(lastCmd)finish(lastCmd,lastFull);else giveUp('Time is up'+(lastFull?' &ndash; I heard &ldquo;'+escTP(lastFull)+'&rdquo; but could not match it':'')+'. Tap the <b>mic</b> and try again.');
   },V_MAX);
-  voiceTimers.none=setTimeout(function(){if(voiceListening&&!heardAny)giveUp('Did not hear anything. Tap <b>Tap to answer</b> and try again.');},V_NOSPEECH);
+  voiceTimers.none=setTimeout(function(){if(voiceListening&&!heardAny)giveUp('Did not hear anything. Tap the <b>mic</b> and try again.');},V_NOSPEECH);
   rec.onspeechstart=function(){heardAny=true;clearTimeout(voiceTimers.none);if(voiceListening)waveSet('voice');};
   rec.onspeechend=function(){if(voiceListening)waveSet('listen');};
   rec.onresult=function(ev){
@@ -1728,7 +1773,7 @@ function voiceMicTap(){
     voiceTimers.sil=setTimeout(function(){
       if(!voiceListening)return;
       if(cmd)finish(cmd,lastFull);
-      else giveUp('Did not catch &ldquo;'+escTP(lastFull)+'&rdquo;. Tap <b>Tap to answer</b> and say A&ndash;E, 1&ndash;5 or alpha&hellip;eagle.');
+      else giveUp('Did not catch &ldquo;'+escTP(lastFull)+'&rdquo;. Tap the <b>mic</b> and say A&ndash;E, 1&ndash;5 or alpha&hellip;eagle.');
     },cmd?V_SILENCE_OK:V_SILENCE_UNCLEAR);
   };
   rec.onerror=function(ev){
@@ -1740,13 +1785,13 @@ function voiceMicTap(){
     if(!voiceListening)return;
     if(Date.now()<deadline-800&&restarts<6){restarts++;try{rec.start();return;}catch(e){}}
     if(lastCmd)finish(lastCmd,lastFull);
-    else giveUp(lastFull?'Did not catch &ldquo;'+escTP(lastFull)+'&rdquo;. Tap <b>Tap to answer</b> and try again.':'Did not hear anything. Tap <b>Tap to answer</b> and try again.');
+    else giveUp(lastFull?'Did not catch &ldquo;'+escTP(lastFull)+'&rdquo;. Tap the <b>mic</b> and try again.':'Did not hear anything. Tap the <b>mic</b> and try again.');
   };
   try{rec.start();}catch(e){giveUp('Could not start the microphone. Try again.');}
 }
 function voiceHandle(cmd,heardText){
   var q=qs[cur],answered=(ans[cur]!==null&&ans[cur]!==undefined);
-  if(!cmd){vStatus('Did not catch &ldquo;'+escTP(heardText||'')+'&rdquo;. Tap <b>Tap to answer</b> and say A&ndash;E, 1&ndash;5 or alpha&hellip;eagle.');return;}
+  if(!cmd){vStatus('Did not catch &ldquo;'+escTP(heardText||'')+'&rdquo;. Tap the <b>mic</b> and say A&ndash;E, 1&ndash;5 or alpha&hellip;eagle.');return;}
   if(cmd.c){
     if(cmd.c==='stop'){voiceStopTap();return;}
     if(cmd.c==='repeat'||(cmd.c==='explain'&&answered)){voiceRepeat();return;}
@@ -1758,11 +1803,12 @@ function voiceHandle(cmd,heardText){
   if(answered){vStatus('Already answered. Say <b>next</b> or <b>repeat</b>.');return;}
   var L=cmd.L;
   if(q.o&&q.o.length<=L.charCodeAt(0)-65){vStatus('There is no option '+L+'. Try again.');return;}
+  voiceSetOpen(true,true);
   vStatus('Heard <b>'+L+'</b> (&ldquo;'+escTP(cmd.heard)+'&rdquo;) &ndash; answering in 2 s. <button type="button" class="vbtn" onclick="voiceCancelAnswer()">Cancel</button>');
   voicePending=setTimeout(function(){voicePending=null;if(voiceOn&&ans[cur]===null)pick(L);},2000);
 }
-function voiceCancelAnswer(){voiceCancelPending();vStatus('Cancelled. Tap <b>Tap to answer</b> to try again.');}
-document.addEventListener('visibilitychange',function(){if(document.hidden&&voiceOn){voiceCancelPending();voiceStopListen();voiceStopSpeech();vStatus('Paused. Tap <b>Read again</b> to continue.');}});
+function voiceCancelAnswer(){voiceCancelPending();vStatus('Cancelled. Tap the <b>mic</b> to try again.');}
+document.addEventListener('visibilitychange',function(){if(document.hidden&&voiceOn){voiceCancelPending();voiceStopListen();voiceStopSpeech();vStatus('Paused. Tap <b>&#8635;</b> to continue.');}});
 window.addEventListener('load',voiceInit);
 if(VSYN){try{VSYN.getVoices();}catch(e){}try{VSYN.addEventListener('voiceschanged',voiceFillPicker);}catch(e){VSYN.onvoiceschanged=voiceFillPicker;}}
 setTimeout(voiceInit,0);
