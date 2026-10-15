@@ -74,8 +74,9 @@ button{font-family:Georgia,serif;cursor:pointer;}
 .exp-box{background:var(--bg2);border:1px solid rgba(128,128,128,.25);border-radius:10px;padding:0;margin-bottom:14px;display:none;font-family:sans-serif;overflow:hidden;}
 .exp-box.show{display:block;}
 .exp-lbl,.kp-lbl{position:relative;background:rgba(128,128,128,.14);border-bottom:1px solid rgba(128,128,128,.2);padding:12px 44px;text-align:center;font-size:14px;font-weight:700;letter-spacing:.2px;text-transform:none;color:var(--wh);font-family:sans-serif;margin:0;}
-.exp-lbl::after{content:"\1F4A1";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:15px;}
-.kp-lbl::after{content:"\1F4DD";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:15px;}
+.ed-ico{position:absolute;right:8px;top:50%;margin-top:-17px;transform:none;width:34px;height:34px;border:0;border-radius:50%;background:transparent;font-size:15px;line-height:1;padding:0;cursor:pointer;color:inherit;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:box-shadow .6s linear,background .6s linear;}
+.ed-ico:active,.ed-ico.holding:active{transform:none!important;filter:none!important;}
+.ed-ico.holding{background:rgba(212,168,67,.35);box-shadow:0 0 0 3px rgba(212,168,67,.8),0 0 16px rgba(212,168,67,.7);}
 .exp-txt,.kp-txt{padding:6px 16px 14px;font-size:13px;line-height:1.65;color:var(--tx);text-align:left;overflow-wrap:break-word;}
 .kp-box{background:var(--bg2);border:1px solid rgba(128,128,128,.25);border-left:3px solid var(--gold);border-radius:10px;padding:0;margin:0 0 14px;display:none;font-family:sans-serif;overflow:hidden;}
 .kp-box.show{display:block;}
@@ -100,6 +101,9 @@ button{font-family:Georgia,serif;cursor:pointer;}
 .rt tbody tr:nth-child(even) td{background:rgba(128,128,128,.07);}
 .rt-fig{margin:10px 0 12px;text-align:center;}
 .rt-fig img{max-width:100%;max-height:420px;height:auto;border-radius:8px;border:1px solid rgba(128,128,128,.3);cursor:zoom-in;background:rgba(128,128,128,.1);}
+.rt-gal{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:flex-start;margin:10px 0 12px;}
+.rt-gal .rt-fig{flex:1 1 150px;min-width:0;margin:0;}
+.rt-gal .rt-fig img{width:100%;max-height:360px;object-fit:contain;}
 .rt-fig figcaption{font-size:.85em;color:var(--grey);margin-top:5px;line-height:1.4;}
 .rt-imgfail{margin:8px 0;padding:10px;border:1px dashed rgba(128,128,128,.4);border-radius:8px;text-align:center;font-size:.85em;color:var(--grey);}
 #imgLb{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;padding:12px;cursor:zoom-out;}
@@ -302,6 +306,32 @@ body.drawing #drawBar{display:flex;}
 @keyframes elspin{to{transform:rotate(360deg);}}
 
 /* ===== auto-highlight ===== */
+
+/* ===== explanation / teaching point editor ===== */
+#edtSheet{display:none;position:fixed;left:0;right:0;bottom:0;z-index:420;background:var(--bg2);border-top:1px solid var(--gold);box-shadow:0 -6px 22px rgba(0,0,0,.45);padding:8px 10px calc(8px + env(safe-area-inset-bottom));font-family:sans-serif;max-height:72vh;overflow:auto;}
+#edtSheet.show{display:block;}
+.edt-in{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:7px;}
+.edt-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.edt-tabs{display:flex;gap:6px;}
+.edt-tabs button{background:rgba(128,128,128,.12);border:1px solid rgba(128,128,128,.35);color:var(--tx);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.edt-tabs button.on{background:var(--gold);border-color:var(--gold);color:#0d1b2a;}
+.edt-where{font-size:10.5px;color:var(--grey);}
+.edt-tools{display:flex;flex-wrap:wrap;gap:5px;}
+.edt-tools button{background:rgba(128,128,128,.12);border:1px solid rgba(128,128,128,.35);color:var(--tx);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;font-family:inherit;}
+#edtTa{width:100%;box-sizing:border-box;min-height:120px;height:22vh;resize:vertical;background:var(--bg3,rgba(128,128,128,.12));color:var(--tx);border:1px solid rgba(128,128,128,.4);border-radius:8px;padding:8px 10px;font:14px/1.5 system-ui,sans-serif;}
+#edtTa:focus{outline:2px solid rgba(212,168,67,.7);outline-offset:0;}
+.edt-legend{font-size:11.5px;color:var(--grey);}
+.edt-legend summary{cursor:pointer;color:var(--gold);font-weight:700;}
+.edt-gl{display:flex;flex-direction:column;gap:4px;margin-top:6px;color:var(--tx);}
+.edt-gl code,.edt-msg pre{background:rgba(128,128,128,.18);padding:1px 5px;border-radius:4px;font-size:11.5px;}
+.edt-msg{font-size:12px;min-height:0;}
+.edt-msg pre{white-space:pre-wrap;display:block;padding:8px;margin:6px 0 0;user-select:all;-webkit-user-select:all;}
+.edt-btns{display:flex;gap:8px;justify-content:flex-end;}
+.edt-btns button{background:none;border:1px solid rgba(128,128,128,.45);color:var(--tx);padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;}
+.edt-btns .edt-save{background:var(--gold);color:#0d1b2a;border-color:var(--gold);font-weight:700;}
+.edt-btns button:disabled{opacity:.5;}
+body.edt #exam{padding-bottom:62vh;}
+body.edt .nav,body.edt .qtag-btns,body.edt .dots,body.edt #optsList,body.edt #exFoot,body.edt #voiceBar,body.edt #vVoicePop{pointer-events:none;opacity:.45;}
 /* ===== highlight editor ===== */
 /* highlight style 2: boxed */
 body.hl-box .hl{text-decoration:none;border:1.5px solid transparent;border-radius:4px;padding:1px 4px;}
@@ -562,11 +592,11 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
     </div>
     <div class="opts" id="optsList"></div>
     <div class="exp-box" id="expBox">
-      <div class="exp-lbl">Explanation</div>
+      <div class="exp-lbl">Explanation<button type="button" class="ed-ico" data-w="e" aria-label="Hold to edit" title="Hold to edit" oncontextmenu="return false">&#128161;</button></div>
       <div class="exp-txt" id="expTxt"></div>
     </div>
     <div class="kp-box" id="kpBox">
-      <div class="kp-lbl">Teaching Point</div>
+      <div class="kp-lbl">Teaching Point<button type="button" class="ed-ico" data-w="kp" aria-label="Hold to edit" title="Hold to edit" oncontextmenu="return false">&#128221;</button></div>
       <div class="kp-txt" id="kpTxt"></div>
     </div>
     <div class="ex-foot" id="exFoot"></div>
@@ -1435,6 +1465,7 @@ function hlBtnClick(e){
 })();
 function hlEdStart(){
   if(hlEd.on)return;
+  if(typeof edt!=='undefined'&&edt.on){alert('Finish editing the explanation first.');return;}
   var ex=document.getElementById('exam');
   if(!ex||!ex.classList.contains('active')||!qs||!qs.length)return;
   if(typeof mode!=='undefined'&&mode==='timed'){alert('Highlight editing is not available during a timed exam.');return;}
@@ -1561,7 +1592,7 @@ function voiceBest(){
   return pick;
 }
 function voiceClean(md,dropSource){
-  var t=stripHLMarkers(String(md||'')).replace(/\r/g,'').trim();
+  var t=stripHLMarkers(String(md||'')).replace(/<br\s*\/?>/gi,' ').replace(/\r/g,'').trim();
   if(dropSource){
     var m=t.indexOf('\n')===-1?t.match(/\(([^()]{3,120})\)\s*\.?\s*$/):null;
     if(m&&/Radiopaedia|Dahnert|Grainger|Brant|edition|guideline|criteria|et al|WHO|ACR/i.test(m[1]))t=t.slice(0,t.length-m[0].length).trim();
@@ -1991,7 +2022,7 @@ function mdTableAt(L,i){
 }
 var RT_FOLD_RX=/(other|wrong|incorrect)\s+(options|answers|choices)|why\b.*\b(incorrect|wrong)|distractors?/i;
 function richInline(x){
-  return escTP(x).replace(/__([^_\n]+?)__/g,'<u>$1</u>').replace(/\*\*([^*\n]+?)\*\*/g,'<strong>$1</strong>').replace(/(^|[^\w*])\*([^\s*][^*\n]*?)\*(?![\w*])/g,'$1<em>$2</em>');
+  return escTP(x).replace(/&lt;br\s*\/?&gt;/gi,'\u0002').replace(/__([^_\n]+?)__/g,'<u>$1</u>').replace(/\*\*([^*\n]+?)\*\*/g,'<strong>$1</strong>').replace(/(^|[^\w*])\*([^\s*][^*\n]*?)\*(?![\w*])/g,'$1<em>$2</em>').replace(/\u0002/g,'<br>');
 }
 // Mini formatter: # title, ## heading, ### sub-heading, > quote, - / * bullets (indent to nest), **bold**, *italic*, __underline__.
 // "## Why other options are incorrect" (and similar) becomes a collapsed, tap-to-open section.
@@ -2012,6 +2043,17 @@ function formatRich(text){
       var n=tb.head.length;
       out+='<div class="rt-tw"><table><thead><tr>'+tb.head.map(function(c,k){return '<th style="text-align:'+(tb.al[k]||'left')+'">'+richInline(c)+'</th>';}).join('')+'</tr></thead><tbody>'
         +tb.rows.map(function(r){var h='<tr>';for(var k=0;k<n;k++)h+='<td style="text-align:'+(tb.al[k]||'left')+'">'+richInline(r[k]||'')+'</td>';return h+'</tr>';}).join('')+'</tbody></table></div>';
+      return;
+    }
+    if(/^\s*(?:!\[[^\]]*\]\(\s*[^)\s]+(?:\s+"[^"]*")?\s*\)\s*){2,}$/.test(line)){ // several images on one line = side by side
+      closeLists();closeQ();
+      var grx=/!\[([^\]]*)\]\(\s*([^)\s]+)(?:\s+"[^"]*")?\s*\)/g,gm,gh='';
+      while((gm=grx.exec(line))!==null){
+        var gsrc=imgSrc(gm[2]);if(!gsrc)continue;
+        var galt=gm[1].trim();
+        gh+='<figure class="rt-fig"><img src="'+escTP(gsrc).replace(/"/g,'&quot;')+'" alt="'+escTP(galt).replace(/"/g,'&quot;')+'" loading="lazy" onclick="imgOpen(this.src)" onerror="imgFail(this)">'+(galt?'<figcaption>'+richInline(galt)+'</figcaption>':'')+'</figure>';
+      }
+      out+=gh?'<div class="rt-gal">'+gh+'</div>':'<div class="rt-p">'+escTP(line.trim())+'</div>';
       return;
     }
     var im=line.match(/^\s*!\[([^\]]*)\]\(\s*([^)\s]+)(?:\s+"[^"]*")?\s*\)\s*$/);
@@ -2070,6 +2112,262 @@ function exFootHTML(q){
   return h;
 }
 
+
+/* ===== explanation / teaching point editor (hold the 💡 / 📝 icon) ===== */
+var EDT_SQL='create table if not exists public.question_edits (\n  qkey text primary key,\n  explanation text,\n  key_point text,\n  updated_at timestamptz default now()\n);\nalter table public.question_edits enable row level security;\ncreate policy "edits read" on public.question_edits for select using (true);\ncreate policy "edits insert" on public.question_edits for insert with check (true);\ncreate policy "edits update" on public.question_edits for update using (true) with check (true);';
+var EDIT_OV={}; // qkey -> {e,kp}: saved edits for the built-in (hard-coded) questions
+var edt={on:false,q:null,which:'e',orig:{e:'',kp:''},val:{e:'',kp:''},db:false,busy:false,tmr:0};
+function edtN(s){return String(s==null?'':s).replace(/\r/g,'').trim();}
+function edtIsDb(q){return !!(q&&q.id&&/^\d+$/.test(String(q.id)));}
+function edtApplyOv(list){
+  if(!list||!list.length)return false;
+  var ch=false;
+  list.forEach(function(q){
+    if(!q||edtIsDb(q))return;
+    var o=EDIT_OV[qKey(q)];if(!o)return;
+    if(o.e!=null&&q.e!==o.e){q.e=o.e;ch=true;}
+    if(o.kp!=null&&q.kp!==o.kp){q.kp=o.kp;ch=true;}
+  });
+  return ch;
+}
+function edtApplyOvAll(){
+  var ch=false;
+  for(var i=0;i<SETS.length;i++)if(Array.isArray(SETS[i]))ch=edtApplyOv(SETS[i])||ch;
+  if(typeof qs!=='undefined'&&qs&&qs.length)ch=edtApplyOv(qs)||ch;
+  return ch;
+}
+function loadEditOverrides(){
+  if(!supaReady())return;
+  fetch(SUPABASE_URL+'/rest/v1/question_edits?select=qkey,explanation,key_point',{headers:supaHeaders(),cache:'no-store'})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(rows){
+      EDIT_OV={};
+      (rows||[]).forEach(function(x){EDIT_OV[x.qkey]={e:x.explanation==null?null:edtN(x.explanation),kp:x.key_point==null?null:edtN(x.key_point)};});
+      var ch=edtApplyOvAll();
+      var ex=document.getElementById('exam');
+      if(ch&&!edt.on&&ex&&ex.classList.contains('active')&&qs&&qs.length)renderQ();
+    }).catch(function(){}); // table not created yet: built-in questions just show their original text
+}
+setTimeout(loadEditOverrides,0);
+
+// hold the icon (about 0.6 s) to open the editor
+(function(){
+  var tmr=0,sx=0,sy=0,btn=null;
+  function stop(){clearTimeout(tmr);tmr=0;if(btn)btn.classList.remove('holding');btn=null;}
+  document.addEventListener('pointerdown',function(e){
+    var b=e.target&&e.target.closest?e.target.closest('.ed-ico'):null;if(!b)return;
+    stop();btn=b;sx=e.clientX;sy=e.clientY;b.classList.add('holding');
+    var w=b.getAttribute('data-w');
+    tmr=setTimeout(function(){tmr=0;b.classList.remove('holding');try{if(navigator.vibrate)navigator.vibrate(18);}catch(x){}edtOpen(w);},600);
+  },true);
+  document.addEventListener('pointermove',function(e){if(tmr&&(Math.abs(e.clientX-sx)>10||Math.abs(e.clientY-sy)>10))stop();},true);
+  ['pointerup','pointercancel'].forEach(function(n){document.addEventListener(n,stop,true);});
+})();
+
+function edtEnsureSheet(){
+  if(document.getElementById('edtSheet'))return;
+  var d=document.createElement('div');d.id='edtSheet';
+  d.innerHTML='<div class="edt-in">'
+   +'<div class="edt-head"><div class="edt-tabs"><button type="button" data-w="e" onclick="edtTab(\'e\')">Explanation</button><button type="button" data-w="kp" onclick="edtTab(\'kp\')">Teaching point</button></div><span class="edt-where" id="edtWhere"></span></div>'
+   +'<div class="edt-tools" onmousedown="event.preventDefault()">'
+   +'<button type="button" onclick="edtLine(\'## \')" title="Heading">## H</button>'
+   +'<button type="button" onclick="edtWrap(\'**\',\'**\')" title="Bold"><b>B</b></button>'
+   +'<button type="button" onclick="edtWrap(\'*\',\'*\')" title="Italic"><i>I</i></button>'
+   +'<button type="button" onclick="edtWrap(\'__\',\'__\')" title="Underline"><u>U</u></button>'
+   +'<button type="button" onclick="edtLine(\'- \')" title="Bullet">&bull; List</button>'
+   +'<button type="button" onclick="edtLine(\'> \')" title="Quote">&gt; Quote</button>'
+   +'<button type="button" onclick="edtInsert(\'\\n![caption](file1.jpg) ![caption](file2.jpg)\\n\')" title="Two images side by side">Img x2</button>'
+   +'<button type="button" onclick="edtBreak()" title="New line inside a table cell (also Cmd/Ctrl/Option + Enter)">&crarr; Line</button>'
+   +'<button type="button" onclick="edtInsert(\'\\n| Item | Detail |\\n|---|---|\\n| a | b |\\n\')" title="Table">Table</button>'
+   +'<button type="button" onclick="edtInsert(\'\\n## Why other options are incorrect\\n- A: \\n- B: \\n\')" title="Collapsed section">Fold</button>'
+   +'</div>'
+   +'<textarea id="edtTa" spellcheck="true" oninput="edtInput()" onkeydown="edtKey(event)" placeholder="Type here. The box above updates as you type."></textarea>'
+   +'<details class="edt-legend"><summary>Format guide</summary><div class="edt-gl">'
+   +'<div><code>## Heading</code> &nbsp; <code>### Smaller heading</code> &nbsp; <code># Title</code></div>'
+   +'<div><code>**bold**</code> &nbsp; <code>*italic*</code> &nbsp; <code>__underline__</code></div>'
+   +'<div><code>- item</code> bullet (start a line with 2 spaces to nest) &nbsp; <code>&gt; quote</code></div>'
+   +'<div>Each line is its own paragraph; a blank line ends a list or quote.</div>'
+   +'<div><code>| A | B |</code> then <code>|---|---|</code> then rows = table</div>'
+   +'<div>New line inside a table cell: type <code>&lt;br&gt;</code> or press <b>Cmd/Ctrl/Option + Enter</b> (or the &crarr; Line button).</div>'
+   +'<div><code>## Why other options are incorrect</code> becomes a tap-to-open fold</div>'
+   +'<div><code>![caption](file.jpg)</code> shows an image (use the Add image button for new ones)</div>'
+   +'<div>Side by side: put 2 or more images on the <b>same line</b>, only spaces between them: <code>![A](a.jpg) ![B](b.jpg)</code></div>'
+   +'<div>Explanation only: a last line like <code>(Radiopaedia, Dahnert)</code> shows as a Source line.</div>'
+   +'</div></details>'
+   +'<div class="edt-msg" id="edtMsg"></div>'
+   +'<div class="edt-btns"><button type="button" id="edtExit" onclick="edtExit()">Exit</button><button type="button" id="edtSave" class="edt-save" onclick="edtSave()">Save &amp; Exit</button></div>'
+   +'</div>';
+  document.body.appendChild(d);
+  if(window.visualViewport){
+    var fit=function(){
+      var s=document.getElementById('edtSheet');if(!s||!edt.on)return;
+      var vv=window.visualViewport,b=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);
+      s.style.bottom=b+'px';s.style.maxHeight=Math.round(vv.height*0.72)+'px';
+    };
+    window.visualViewport.addEventListener('resize',fit);window.visualViewport.addEventListener('scroll',fit);
+    edt.fit=fit;
+  }
+}
+function edtMsg(t,bad,pre){var m=document.getElementById('edtMsg');if(!m)return;m.textContent='';m.style.color=bad?'#e57373':'';
+  if(pre){var p=document.createElement('div');p.textContent=t;m.appendChild(p);var c=document.createElement('pre');c.textContent=pre;m.appendChild(c);}else m.textContent=t||'';}
+function edtOpen(which){
+  if(edt.on)return;
+  var ex=document.getElementById('exam');
+  if(!ex||!ex.classList.contains('active')||!qs||!qs.length)return;
+  if(typeof hlEd!=='undefined'&&hlEd.on){alert('Finish the highlight editor first.');return;}
+  var q=qs[cur];if(!q)return;
+  var db=edtIsDb(q);
+  if(!db&&!supaReady()){alert('The database is not set up, so this cannot be saved.');return;}
+  if(!(hlPinOk||imgPinOk||editMode)){
+    var p=prompt('Enter PIN to edit');
+    if(p===null)return;
+    if(String(p).trim()!==EDIT_PIN){alert('Wrong PIN.');return;}
+  }
+  hlPinOk=true;
+  if(typeof drawMode!=='undefined'&&drawMode&&typeof toggleDraw==='function')toggleDraw();
+  edtEnsureSheet();
+  edt.q=q;edt.db=db;edt.busy=false;
+  edt.orig={e:edtN(q.e),kp:edtN(q.kp)};
+  edt.val={e:edt.orig.e,kp:edt.orig.kp};
+  edt.which=which==='kp'?'kp':'e';
+  edt.on=true;
+  document.body.classList.add('edt');
+  document.getElementById('edtWhere').textContent=db?'Saves to the database (question #'+q.id+')':'Built-in question: saves as an online edit';
+  edtMsg('');
+  edtTab(edt.which,true);
+  document.getElementById('edtSheet').classList.add('show');
+  if(edt.fit)edt.fit();
+  var ta=document.getElementById('edtTa');if(ta)setTimeout(function(){try{ta.focus({preventScroll:true});}catch(e){ta.focus();}},50);
+}
+function edtTab(w,init){
+  var ta=document.getElementById('edtTa');
+  if(!init&&ta)edt.val[edt.which]=ta.value;
+  edt.which=w;
+  if(ta)ta.value=edt.val[w];
+  var bs=document.querySelectorAll('#edtSheet .edt-tabs button');
+  for(var i=0;i<bs.length;i++)bs[i].classList.toggle('on',bs[i].getAttribute('data-w')===w);
+  var box=document.getElementById(w==='e'?'expBox':'kpBox');
+  if(box){box.classList.add('show');
+    var hd=document.querySelector('#exam .hdr'),y=box.getBoundingClientRect().top+window.pageYOffset-(hd?hd.offsetHeight:0)-8;
+    try{window.scrollTo({top:Math.max(0,y),behavior:'smooth'});}catch(e){window.scrollTo(0,Math.max(0,y));}}
+  edtLive();
+  if(ta&&!init)ta.focus();
+}
+function edtInput(){
+  var ta=document.getElementById('edtTa');if(!ta)return;
+  edt.val[edt.which]=ta.value;
+  clearTimeout(edt.tmr);edt.tmr=setTimeout(edtLive,120);
+}
+function edtLive(){ // show the text being typed in the real boxes above
+  var e=document.getElementById('expTxt'),k=document.getElementById('kpTxt'),kb=document.getElementById('kpBox');
+  if(e)e.innerHTML=formatTeach(edt.val.e);
+  if(k)k.innerHTML=formatKP(edt.val.kp);
+  if(kb)kb.className=(edtN(edt.val.kp)||edt.which==='kp')?'kp-box show':'kp-box';
+}
+function edtWrap(a,b){
+  var t=document.getElementById('edtTa');if(!t)return;
+  var s=t.selectionStart,e=t.selectionEnd,v=t.value,sel=v.slice(s,e)||'text';
+  t.value=v.slice(0,s)+a+sel+b+v.slice(e);t.focus();t.selectionStart=s+a.length;t.selectionEnd=s+a.length+sel.length;edtInput();
+}
+function edtLine(prefix){
+  var t=document.getElementById('edtTa');if(!t)return;
+  var v=t.value,s=t.selectionStart,e=t.selectionEnd,ls=v.lastIndexOf('\n',s-1)+1,le=v.indexOf('\n',e);if(le<0)le=v.length;
+  var lines=v.slice(ls,le).split('\n').map(function(l){return l.indexOf(prefix)===0?l.slice(prefix.length):prefix+l.replace(/^(#{1,3}\s+|[-*+]\s+|>\s?)/,'');});
+  var blk=lines.join('\n');
+  t.value=v.slice(0,ls)+blk+v.slice(le);t.focus();t.selectionStart=ls;t.selectionEnd=ls+blk.length;edtInput();
+}
+function edtBreak(){
+  var t=document.getElementById('edtTa');if(!t)return;
+  var v=t.value,s=t.selectionStart,ls=v.lastIndexOf('\n',s-1)+1;
+  edtInsert(/^\s*\|/.test(v.slice(ls))?'<br>':'\n');
+}
+function edtKey(e){
+  if(e.key==='Enter'&&(e.metaKey||e.ctrlKey||e.altKey)){e.preventDefault();edtBreak();}
+}
+function edtInsert(txt){
+  var t=document.getElementById('edtTa');if(!t)return;
+  var s=t.selectionStart,v=t.value;
+  t.value=v.slice(0,s)+txt+v.slice(t.selectionEnd);t.focus();t.selectionStart=t.selectionEnd=s+txt.length;edtInput();
+}
+function edtClose(){
+  clearTimeout(edt.tmr);
+  edt.on=false;edt.busy=false;
+  var sv0=document.getElementById('edtSave');if(sv0)sv0.disabled=false;
+  document.body.classList.remove('edt');
+  var s=document.getElementById('edtSheet');if(s){s.classList.remove('show');s.style.bottom='';}
+  var ex=document.getElementById('exam');
+  if(ex&&ex.classList.contains('active')&&qs&&qs.length)renderQ();
+}
+function edtDirty(){
+  var ta=document.getElementById('edtTa');if(ta)edt.val[edt.which]=ta.value;
+  return edtN(edt.val.e)!==edt.orig.e||edtN(edt.val.kp)!==edt.orig.kp;
+}
+function edtExit(){
+  if(edt.busy)return;
+  if(edtDirty()&&!confirm('Exit without saving? Your changes will be lost.'))return;
+  edtClose();
+}
+function edtSetEverywhere(q,fields){
+  function same(x){return x===q||(edtIsDb(q)?String(x.id)===String(q.id):(!edtIsDb(x)&&qKey(x)===qKey(q)));}
+  var lists=[];for(var i=0;i<SETS.length;i++)if(Array.isArray(SETS[i]))lists.push(SETS[i]);
+  if(typeof qs!=='undefined'&&qs)lists.push(qs);
+  lists.forEach(function(l){l.forEach(function(x){if(x&&same(x)){for(var f in fields)x[f]=fields[f];}});});
+}
+function edtSave(){
+  if(edt.busy||!edt.on)return;
+  if(!edtDirty()){edtClose();return;}
+  var q=edt.q,nv={e:edtN(edt.val.e),kp:edtN(edt.val.kp)},ch={};
+  if(nv.e!==edt.orig.e)ch.e=nv.e;
+  if(nv.kp!==edt.orig.kp)ch.kp=nv.kp;
+  if(ch.e!==undefined&&!nv.e){edtMsg('The explanation cannot be empty.',true);return;}
+  edt.busy=true;edtMsg('Saving...');
+  var sv=document.getElementById('edtSave');if(sv)sv.disabled=true;
+  function fail(err){
+    edt.busy=false;if(sv)sv.disabled=false;
+    var m=err&&err.message?err.message:'connection error';
+    if(err&&err.noTable)edtMsg('Not saved: the edits table is not set up yet. Run this once in the Supabase SQL Editor, then Save again:',true,EDT_SQL);
+    else edtMsg('Not saved: '+m+'.',true);
+  }
+  function done(){
+    var upd={};if(ch.e!==undefined)upd.e=ch.e;if(ch.kp!==undefined)upd.kp=ch.kp;
+    edtSetEverywhere(q,upd);
+    if(!edt.db){var k=qKey(q),o=EDIT_OV[k]||{e:null,kp:null};if(upd.e!==undefined)o.e=upd.e;if(upd.kp!==undefined)o.kp=upd.kp;EDIT_OV[k]=o;}
+    try{localStorage.removeItem('sba_q_cache');}catch(e){}
+    edtClose();
+    try{saveProgressDebounced();}catch(e){}
+  }
+  if(edt.db){
+    var id=encodeURIComponent(q.id);
+    fetch(SUPABASE_URL+'/rest/v1/questions?select=explanation,key_point&id=eq.'+id,{headers:supaHeaders(),cache:'no-store'})
+      .then(function(r){if(!r.ok)throw new Error('could not read the question (HTTP '+r.status+')');return r.json();})
+      .then(function(rows){
+        if(!rows||!rows.length)throw new Error('this question was not found online');
+        var cur=rows[0],body={},clash=false;
+        if(ch.e!==undefined){body.explanation=ch.e;if(edtN(cur.explanation)!==edt.orig.e)clash=true;}
+        if(ch.kp!==undefined){body.key_point=ch.kp;if(edtN(cur.key_point)!==edt.orig.kp)clash=true;}
+        if(clash&&!confirm('This text was changed online since you opened it. Overwrite the online version with yours?'))throw new Error('cancelled, nothing was saved');
+        return fetch(SUPABASE_URL+'/rest/v1/questions?id=eq.'+id,{method:'PATCH',headers:supaHeaders({'Prefer':'return=representation'}),body:JSON.stringify(body)});
+      })
+      .then(function(r){if(!r.ok)throw new Error('the database refused the update (HTTP '+r.status+')');return r.json();})
+      .then(function(d){
+        if(!d||!d.length)throw new Error('the database blocked the update. In the Supabase SQL Editor run: create policy "allow update questions" on public.questions for update using (true) with check (true);');
+        done();
+      }).catch(fail);
+  }else{
+    var row={qkey:qKey(q)};
+    if(ch.e!==undefined)row.explanation=ch.e;
+    if(ch.kp!==undefined)row.key_point=ch.kp;
+    fetch(SUPABASE_URL+'/rest/v1/question_edits?on_conflict=qkey',{method:'POST',headers:supaHeaders({'Prefer':'resolution=merge-duplicates,return=representation'}),body:JSON.stringify(row)})
+      .then(function(r){
+        if(r.status===404){var er=new Error('table missing');er.noTable=true;throw er;}
+        if(!r.ok)throw new Error('the database refused the edit (HTTP '+r.status+')');
+        return r.json();
+      })
+      .then(function(d){if(!d||!d.length)throw new Error('the database blocked the edit (check the policies in the SQL below)');done();})
+      .catch(fail);
+  }
+}
+
 var _snapCur=-1;
 // Snap targets (all screen sizes): toolbar row, first line of question, option A, explanation box, teaching point box.
 // Hidden boxes (explanation / teaching point before answering) are skipped automatically.
@@ -2104,7 +2402,7 @@ function snapToQuestion(force){
 (function(){
   var tmr=0,touching=false,auto=0;
   function settle(){
-    if(touching||document.body.classList.contains('drawing')||document.body.classList.contains('hled'))return;
+    if(touching||document.body.classList.contains('drawing')||document.body.classList.contains('hled')||document.body.classList.contains('edt'))return;
     var ex=document.getElementById('exam');if(!ex||!ex.classList.contains('active'))return;
     if(document.querySelector('#imgLb.show'))return;
     var ae=document.activeElement;if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return;
@@ -2690,7 +2988,7 @@ function openGroup(k){
   if(editMode){var tp=document.createElement('span');tp.className='pen';tp.style.position='static';tp.style.marginLeft='8px';tp.innerHTML='&#9998;';tp.onclick=function(){renameGroup(k);};gt.appendChild(tp);var tr=document.createElement('span');tr.className='pen trash';tr.style.position='static';tr.style.marginLeft='6px';tr.innerHTML='&#128465;';tr.onclick=function(){deleteGroup(k);};gt.appendChild(tr);}
   document.getElementById('groupOv').classList.add('show');
 }
-var EDIT_PIN='111111';
+var EDIT_PIN='121212';
 var editMode=false;
 function addPen(card,fn){
   if(!editMode)return;
@@ -2916,6 +3214,7 @@ function resumeProgressByIndex(i){
   mode=row.mode;lbl=row.set_label;qs=row.qs;ans=row.ans;cur=row.cur||0;hintShown=false;
   document.getElementById('hLbl').textContent=lbl;
   document.getElementById('timerWrap').style.display=mode==='timed'?'flex':'none';
+  edtApplyOv(qs);
   buildDots();show('exam');renderQ();
   refreshQsFromDb();
 }
@@ -3090,6 +3389,7 @@ function renderQ(){
   var kpText=(q.kp&&String(q.kp).trim())?String(q.kp).trim():'';
   document.getElementById('kpTxt').innerHTML=formatKP(kpText);
   kb.className=(isA&&kpText)?'kp-box show':'kp-box';
+  if(edt.on)edtLive();
   var ft=document.getElementById('exFoot');
   if(ft){var fh=isA?exFootHTML(q):'';ft.innerHTML=fh;ft.className=fh?'ex-foot show':'ex-foot';}
   if(cur!==_snapCur){_snapCur=cur;setTimeout(snapToQuestion,60);}
@@ -3131,7 +3431,7 @@ document.addEventListener('keydown',function(e){
   var t=e.target;
   if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;
   if(!document.getElementById('exam').classList.contains('active'))return;
-  if(hlEd.on)return;
+  if(hlEd.on||edt.on)return;
   if(document.getElementById('hcov').classList.contains('show'))return;
   var k=e.key;
   if(document.getElementById('timeup-ov').classList.contains('show')){
@@ -3626,7 +3926,7 @@ function initDraw(){
   dCv.addEventListener('pointerup',end);
   dCv.addEventListener('pointercancel',end);
 }
-function goHome(){if(hlEd.on)hlEdClose();stopTimer();document.getElementById('timeup-ov').classList.remove('show');buildSetGrid();show('home');loadSavedProgressList();}
+function goHome(){if(hlEd.on)hlEdClose();if(edt.on)edtClose();stopTimer();document.getElementById('timeup-ov').classList.remove('show');buildSetGrid();show('home');loadSavedProgressList();}
 buildSetGrid();
 initCountdown();
 initDraw();
