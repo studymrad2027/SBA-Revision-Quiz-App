@@ -417,6 +417,10 @@ body.voice-open #exam{padding-bottom:190px;}
 #vVoicePop{display:none;position:fixed;right:12px;bottom:120px;width:min(430px,calc(100vw - 24px));box-sizing:border-box;z-index:61;background:var(--bg2);border:1px solid var(--gold);border-radius:12px;padding:6px;box-shadow:0 6px 20px rgba(0,0,0,.5);}
 #vVoicePop.show{display:block;}
 #vVoicePop .vsel{margin:0;width:100%;}
+#vVoicePop .vchk{display:flex;align-items:center;gap:8px;font:12px sans-serif;color:var(--tx);padding:5px 4px;cursor:pointer;}
+#vVoicePop .vchk.vhint{color:var(--grey);cursor:default;padding-top:0;font-size:11px;}
+#vVoicePop .vsel{margin-top:4px;}
+.vib.on{border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 2px rgba(212,168,67,.35);}
 body.voice-open #exam{padding-bottom:125px;}
 body.voice-open.voice-mini #exam{padding-bottom:80px;}
 @media (prefers-reduced-motion:reduce){#voiceBar,#voiceBar .vwave,#voiceBar .vrow1,#voiceBar .vrow2{transition:none;}}
@@ -611,13 +615,14 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
         <button type="button" class="vib" id="vRep" aria-label="Read again" title="Read again" onclick="voiceRepeat()"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
         <button type="button" class="vib" id="vStop" aria-label="Stop" title="Stop" onclick="voiceStopTap()"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
         <button type="button" class="vib mic" id="vMic" aria-label="Tap to answer" title="Tap to answer" onclick="voiceMicTap()"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg></button>
+        <button type="button" class="vib" id="vWake" aria-label="Hands-free" title="Hands-free OFF. Hold Space or tap to turn on" onclick="voiceWakeToggle()">Hey</button>
         <button type="button" class="vib" id="vRate" aria-label="Reading speed" title="Reading speed" onclick="voiceCycleRate()">1x</button>
-        <button type="button" class="vib" id="vVoiceBtn" aria-label="Choose voice" title="Choose voice" onclick="voicePopToggle()"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></button>
+        <button type="button" class="vib" id="vVoiceBtn" aria-label="Choose voice" title="Voice &amp; listening settings" onclick="voicePopToggle()"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></button>
         <button type="button" class="vib" aria-label="Close voice panel" title="Close" onclick="voiceClose()"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
     </div>
-    <div id="vVoicePop"><select class="vsel" id="vVoice" aria-label="Choose voice" onchange="voicePick(this.value)"></select></div>
-    <div class="kb-hint">&#8593; &#8595; choose &middot; Enter select / next &middot; A&ndash;E answer &middot; &#8592; clear / back &middot; &#8594; rule out / next &middot; X toggle &middot; S skip &middot; H hint</div>
+    <div id="vVoicePop"><label class="vchk"><input type="checkbox" id="vAutoChk" onchange="voiceAutoSet(this.checked)"> Auto-listen after reading</label><label class="vchk"><input type="checkbox" id="vWakeChk" onchange="voiceWakeSet(this.checked)"> Hands-free: say &ldquo;Hey Quiz&rdquo;</label><div class="vchk vhint">Space: tap = mic on/off &middot; hold = hands-free on/off</div><select class="vsel" id="vVoice" aria-label="Choose voice" onchange="voicePick(this.value)"></select></div>
+    <div class="kb-hint">&#8593; &#8595; choose &middot; Enter select / next &middot; A&ndash;E answer &middot; &#8592; clear / back &middot; &#8594; rule out / next &middot; X toggle &middot; S skip &middot; H hint &middot; Space mic (hold = hands-free)</div>
     <button type="button" class="copy-btn" id="copyQBtn" onclick="copyQuestion()">Copy question &amp; options</button>
   </div>
 </div>
@@ -1629,7 +1634,7 @@ function voiceChunks(text){
   return out;
 }
 function voiceStopSpeech(){
-  voiceTok++;
+  voiceTok++;voiceSpeaking=false;
   waveSet('idle');
   if(VSYN){try{VSYN.cancel();}catch(e){}}
 }
@@ -1637,9 +1642,10 @@ function voiceSpeak(text,onDone){
   if(!VSYN||!voiceOn){if(onDone)onDone();return;}
   voiceStopSpeech();
   var tok=voiceTok,chunks=voiceChunks(text),i=0,v=voiceBest();
+  wakeStop();voiceSpeaking=true;
   function next(){
     if(tok!==voiceTok)return;
-    if(i>=chunks.length){waveSet('idle');if(onDone)onDone();return;}
+    if(i>=chunks.length){voiceSpeaking=false;waveSet('idle');if(onDone)onDone();return;}
     waveSet('speak');
     var u=new SpeechSynthesisUtterance(chunks[i++]);
     if(v){u.voice=v;u.lang=v.lang;}else u.lang='en-GB';
@@ -1672,13 +1678,13 @@ function voiceResultText(q,mine){
 function voiceReadQuestion(){
   var q=qs[cur];if(!q)return;
   vStatus('&#128266; Reading the question&hellip; tap the <b>mic</b> any time.');
-  voiceSpeak(voiceQuestionText(q),function(){vStatus('Ready. Tap the <b>mic</b> and say A&ndash;E, 1&ndash;5 or alpha&hellip;eagle.');});
+  voiceSpeak(voiceQuestionText(q),function(){vStatus(voiceAuto&&VREC?'Getting ready to listen&hellip;':'Ready. Press <b>Space</b> or tap the <b>mic</b> and say A&ndash;E, 1&ndash;5 or alpha&hellip;eagle.');voiceAfterRead();});
 }
 function voiceReadResult(){
   var q=qs[cur];if(!q)return;
   var mine=ans[cur];
   vStatus('&#128266; '+(mine===q.a?'<b>Correct</b>':'<b>Incorrect</b> &ndash; answer '+q.a)+'. Reading explanation&hellip;');
-  voiceSpeak(voiceResultText(q,mine)+voiceExplainText(q),function(){vStatus('Done. Say <b>next</b>, <b>repeat</b> or tap Next.');});
+  voiceSpeak(voiceResultText(q,mine)+voiceExplainText(q),function(){vStatus(voiceAuto&&VREC?'Getting ready to listen&hellip;':'Done. Say <b>next</b>, <b>repeat</b> or tap Next.');voiceAfterRead();});
 }
 function voiceStateKey(){return cur+'|'+((ans[cur]!==null&&ans[cur]!==undefined)?'a':'u');}
 function voiceAfterRender(){
@@ -1688,10 +1694,10 @@ function voiceAfterRender(){
   if(!voiceJustAnswered&&voiceStateKey()===voiceLastState)return;
   voiceLastState=voiceStateKey();
   voiceCancelPending();
-  voiceStopListen();
+  voiceStopListen();wakeStop();
   if(voiceJustAnswered){voiceJustAnswered=false;voiceReadResult();}
   else if(ans[cur]===null||ans[cur]===undefined)voiceReadQuestion();
-  else{voiceStopSpeech();vStatus('Answered. Tap <b>&#8635;</b> to hear the explanation.');}
+  else{voiceStopSpeech();vStatus('Answered. Tap <b>&#8635;</b> to hear the explanation.');voiceSettle();}
 }
 var voiceOpenPref=true;
 try{if(localStorage.getItem('sba_voice_open')==='0')voiceOpenPref=false;}catch(e){}
@@ -1709,7 +1715,7 @@ function voiceToggle(){
   if(!VSYN)return;
   if(voiceOn){voiceClose();return;}
   if(mode==='timed'){alert('Voice is turned off in Timed mode.');return;}
-  voiceOn=true;voiceLastState=voiceStateKey();
+  voiceOn=true;voiceLastState=voiceStateKey();voiceUI();
   var b=document.getElementById('spkBtn');if(b)b.classList.add('hl-on');
   document.getElementById('voiceBar').classList.add('show');document.body.classList.add('voice-open');document.body.classList.toggle('voice-mini',!voiceOpenPref);waveSize();waveSet('idle');
   if(voiceOpenPref)requestAnimationFrame(function(){requestAnimationFrame(function(){if(voiceOn)voiceSetOpen(true,true);});});
@@ -1718,13 +1724,13 @@ function voiceToggle(){
 }
 function voiceClose(){
   voiceOn=false;voiceJustAnswered=false;voiceLastState='';
-  voiceCancelPending();voiceStopListen();voiceStopSpeech();
+  voiceCancelPending();voiceStopListen();voiceStopSpeech();wakeStop();clearTimeout(voiceResumeT);
   var b=document.getElementById('spkBtn');if(b)b.classList.remove('hl-on');
   var bar=document.getElementById('voiceBar');if(bar)bar.classList.remove('show','open');document.body.classList.remove('voice-open','voice-mini');var vp=document.getElementById('vVoicePop');if(vp)vp.classList.remove('show');
 }
-function voiceStopTap(){voiceCancelPending();voiceStopListen();voiceStopSpeech();vStatus('Stopped. Tap <b>&#8635;</b> or the <b>mic</b>.');}
+function voiceStopTap(){voiceCancelPending();voiceStopListen();voiceStopSpeech();wakeStop();vStatus('Stopped. Tap <b>&#8635;</b> or press <b>Space</b>.');voiceSettle();}
 function voiceRepeat(){
-  voiceCancelPending();voiceStopListen();
+  voiceCancelPending();voiceStopListen();wakeStop();
   if(ans[cur]===null||ans[cur]===undefined)voiceReadQuestion();else voiceReadResult();
 }
 function voiceCycleRate(){
@@ -1753,7 +1759,7 @@ function voiceParse(tr){
   for(var L in V_LET)if(V_LET[L].indexOf(w)>=0)return {L:L,heard:s};
   return null;
 }
-var V_SILENCE_OK=1400,V_SILENCE_UNCLEAR=3000,V_NOSPEECH=10000,V_MAX=15000;
+var V_SILENCE_OK=1400,V_SILENCE_UNCLEAR=3000,V_NOSPEECH=10000,V_MAX=15000,V_NOSPEECH_AUTO=12000,V_MAX_AUTO=20000;
 var voiceTimers={sil:0,max:0,none:0};
 function voiceClearTimers(){clearTimeout(voiceTimers.sil);clearTimeout(voiceTimers.max);clearTimeout(voiceTimers.none);voiceTimers.sil=voiceTimers.max=voiceTimers.none=0;}
 function voiceStopListen(){
@@ -1766,25 +1772,26 @@ function voiceStopListen(){
 function voiceCancelPending(){if(voicePending){clearTimeout(voicePending);voicePending=null;}}
 // Tap to talk: keeps listening through short pauses. It stops ~1.4 s after you stop talking (when it understood you),
 // ~3 s after unclear speech, 10 s if you say nothing, and 15 s at most.
-function voiceMicTap(){
+function voiceMicTap(auto){
   if(!VREC)return;
-  if(voiceListening){voiceStopListen();vStatus('Stopped listening.');return;}
+  if(voiceListening){voiceStopListen();vStatus('Stopped listening.');voiceSettle();return;}
   voiceCancelPending();
-  voiceStopSpeech();
+  voiceStopSpeech();wakeStop();
+  var maxMs=auto===true?V_MAX_AUTO:V_MAX,noneMs=auto===true?V_NOSPEECH_AUTO:V_NOSPEECH;
   var rec=new VREC();voiceRec=rec;
   rec.lang='en-GB';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=5;
   voiceListening=true;
   waveSet('listen');
   voiceMicUI(true);
   vStatus('&#127908; Listening&hellip; say <b>A&ndash;E</b>, <b>1&ndash;5</b> or <b>alpha&hellip;eagle</b> (or next / repeat / skip).');
-  var heardAny=false,deadline=Date.now()+V_MAX,restarts=0,lastFull='',lastCmd=null;
-  function finish(cmd,text){voiceStopListen();voiceHandle(cmd,text);}
-  function giveUp(msg){voiceStopListen();vStatus(msg);}
+  var heardAny=false,deadline=Date.now()+maxMs,restarts=0,lastFull='',lastCmd=null;
+  function finish(cmd,text){voiceStopListen();voiceHandle(cmd,text);voiceSettle();}
+  function giveUp(msg){voiceStopListen();vStatus(msg);voiceSettle(1800);}
   voiceTimers.max=setTimeout(function(){
     if(!voiceListening)return;
     if(lastCmd)finish(lastCmd,lastFull);else giveUp('Time is up'+(lastFull?' &ndash; I heard &ldquo;'+escTP(lastFull)+'&rdquo; but could not match it':'')+'. Tap the <b>mic</b> and try again.');
-  },V_MAX);
-  voiceTimers.none=setTimeout(function(){if(voiceListening&&!heardAny)giveUp('Did not hear anything. Tap the <b>mic</b> and try again.');},V_NOSPEECH);
+  },maxMs);
+  voiceTimers.none=setTimeout(function(){if(voiceListening&&!heardAny)giveUp('Did not hear anything. Press <b>Space</b> or tap the <b>mic</b> to try again.');},noneMs);
   rec.onspeechstart=function(){heardAny=true;clearTimeout(voiceTimers.none);if(voiceListening)waveSet('voice');};
   rec.onspeechend=function(){if(voiceListening)waveSet('listen');};
   rec.onresult=function(ev){
@@ -1838,9 +1845,122 @@ function voiceHandle(cmd,heardText){
   vStatus('Heard <b>'+L+'</b> (&ldquo;'+escTP(cmd.heard)+'&rdquo;) &ndash; answering in 2 s. <button type="button" class="vbtn" onclick="voiceCancelAnswer()">Cancel</button>');
   voicePending=setTimeout(function(){voicePending=null;if(voiceOn&&ans[cur]===null)pick(L);},2000);
 }
-function voiceCancelAnswer(){voiceCancelPending();vStatus('Cancelled. Tap the <b>mic</b> to try again.');}
-document.addEventListener('visibilitychange',function(){if(document.hidden&&voiceOn){voiceCancelPending();voiceStopListen();voiceStopSpeech();vStatus('Paused. Tap <b>&#8635;</b> to continue.');}});
-window.addEventListener('load',voiceInit);
+function voiceCancelAnswer(){voiceCancelPending();vStatus('Cancelled. Tap the <b>mic</b> to try again.');voiceSettle(1500);}
+document.addEventListener('visibilitychange',function(){if(document.hidden&&voiceOn){voiceCancelPending();voiceStopListen();voiceStopSpeech();wakeStop();vStatus('Paused. Tap <b>&#8635;</b> to continue.');}else if(!document.hidden&&voiceOn&&voiceWake)voiceSettle(400);});
+
+/* ===== auto-listen after reading + hands-free ("Hey Quiz") + Space key ===== */
+var voiceAuto=true,voiceWake=false,voiceSpeaking=false,wakeRec=null,wakeActive=false,wakeRestartT=0,voiceResumeT=0,wakeAudio=null;
+try{if(localStorage.getItem('sba_voice_auto')==='0')voiceAuto=false;if(localStorage.getItem('sba_voice_wake')==='1')voiceWake=true;}catch(e){}
+var WAKE_RE=/\b(?:hey|hay|hi|ok|okay)\s*(?:quiz|quizz|kwiz|quiche|quizzes)\b/g;
+function voiceUI(){
+  var a=document.getElementById('vAutoChk'),w=document.getElementById('vWakeChk'),b=document.getElementById('vWake');
+  if(a)a.checked=voiceAuto;if(w)w.checked=voiceWake;
+  if(b){b.classList.toggle('on',voiceWake);b.title=voiceWake?'Hands-free ON (say “Hey Quiz”). Hold Space or tap to turn off':'Hands-free OFF. Hold Space or tap to turn on';b.setAttribute('aria-label',b.title);}
+}
+function voiceBeep(){
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    if(!wakeAudio)wakeAudio=new AC();
+    if(wakeAudio.state==='suspended')wakeAudio.resume();
+    var o=wakeAudio.createOscillator(),g=wakeAudio.createGain(),t=wakeAudio.currentTime;
+    o.type='sine';o.frequency.value=880;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.18,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+0.16);
+    o.connect(g);g.connect(wakeAudio.destination);o.start(t);o.stop(t+0.18);
+  }catch(e){}
+}
+function voiceAutoSet(on){voiceAuto=!!on;try{localStorage.setItem('sba_voice_auto',on?'1':'0');}catch(e){}voiceUI();}
+function voiceWakeSet(on){
+  if(on&&!VREC){voiceWake=false;voiceUI();vStatus('Hands-free needs speech recognition, which this browser does not support. Try Chrome or Edge.');return;}
+  voiceWake=!!on;try{localStorage.setItem('sba_voice_wake',on?'1':'0');}catch(e){}
+  voiceUI();
+  if(!voiceOn)return;
+  if(on){voiceBeep();vStatus('&#128066; Hands-free <b>ON</b>.');voiceSettle(250);}
+  else{wakeStop();vStatus('Hands-free <b>OFF</b>.');}
+}
+function voiceWakeToggle(){voiceWakeSet(!voiceWake);}
+// after reading: open the mic by itself (auto-listen), otherwise go back to waiting for the wake word
+function voiceAfterRead(){
+  var tok=voiceTok;
+  setTimeout(function(){
+    if(!voiceOn||tok!==voiceTok||voiceListening||voicePending)return;
+    if(voiceAuto&&VREC)voiceMicTap(true);else voiceResume();
+  },550); // short pause so the speaker tail is not picked up by the mic
+}
+function voiceSettle(ms){clearTimeout(voiceResumeT);voiceResumeT=setTimeout(voiceResume,ms||600);}
+function voiceResume(){if(voiceOn&&voiceWake&&!voiceListening&&!voicePending&&!voiceSpeaking&&!wakeActive&&!document.hidden)wakeStart();}
+function wakeStop(){
+  clearTimeout(wakeRestartT);wakeActive=false;
+  if(wakeRec){try{wakeRec.onresult=wakeRec.onerror=wakeRec.onend=null;wakeRec.abort();}catch(e){}wakeRec=null;}
+  if(vWave.state==='wake')waveSet('idle');
+}
+function wakeStart(){
+  if(!VREC||!voiceOn||!voiceWake||wakeActive||voiceListening||voiceSpeaking||mode==='timed')return;
+  var rec=new VREC();wakeRec=rec;wakeActive=true;
+  rec.lang='en-GB';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=3;
+  waveSet('wake');
+  vStatus('&#128066; Hands-free: say <b>&ldquo;Hey Quiz&rdquo;</b> and wait for the beep, or &ldquo;Hey Quiz, next&rdquo;.');
+  var latest=[],settle=0;
+  function norm(t){return String(t||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();}
+  function after(t){var s=norm(t),m,last=null;WAKE_RE.lastIndex=0;while((m=WAKE_RE.exec(s)))last=m;return last?s.slice(last.index+last[0].length).trim():null;}
+  function fire(){
+    settle=0;if(!wakeActive||wakeRec!==rec)return;
+    var rest=null;
+    for(var i=0;i<latest.length&&rest===null;i++)rest=after(latest[i]);
+    wakeStop();voiceBeep();
+    var cmd=rest?voiceParse(rest):null;
+    if(cmd){voiceHandle(cmd,rest);voiceSettle();}
+    else voiceMicTap(true);
+  }
+  rec.onresult=function(ev){
+    var alts=[],r=ev.results[ev.results.length-1],full='';
+    for(var i=0;i<ev.results.length;i++)full+=(i?' ':'')+(ev.results[i][0]?ev.results[i][0].transcript:'');
+    alts.push(full);
+    for(var k=0;k<r.length;k++)alts.push(r[k].transcript);
+    var hit=false;for(var j=0;j<alts.length;j++)if(after(alts[j])!==null){hit=true;break;}
+    if(!hit)return;
+    latest=alts;
+    clearTimeout(settle);settle=setTimeout(fire,750); // let a trailing command ("hey quiz next") arrive
+  };
+  rec.onerror=function(ev){
+    var e=ev&&ev.error;
+    if(e==='not-allowed'||e==='service-not-allowed'){wakeStop();voiceWake=false;voiceUI();try{localStorage.setItem('sba_voice_wake','0');}catch(x){}vStatus('Microphone is blocked, so hands-free is off. Allow microphone access for this site, then turn it on again.');}
+    else if(e==='network'){wakeStop();vStatus('Hands-free needs an internet connection. It will retry when you tap the mic or hold Space.');}
+  };
+  rec.onend=function(){ // the browser ends sessions every so often; quietly restart
+    if(!wakeActive||wakeRec!==rec)return;
+    wakeRec=null;wakeActive=false;
+    wakeRestartT=setTimeout(wakeStart,350);
+  };
+  try{rec.start();}catch(e){wakeActive=false;wakeRec=null;wakeRestartT=setTimeout(wakeStart,1500);}
+}
+// Space: tap = mic on/off, hold (about 0.7 s) = hands-free on/off
+var spaceT=0,spaceFired=false,spaceDown=false;
+function spaceBlocked(e){
+  if(drawMode||e.ctrlKey||e.metaKey||e.altKey)return true;
+  var t=e.target;
+  if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return true;
+  var ex=document.getElementById('exam');
+  if(!ex||!ex.classList.contains('active'))return true;
+  if(hlEd.on||edt.on)return true;
+  if(document.getElementById('hcov').classList.contains('show')||document.getElementById('timeup-ov').classList.contains('show'))return true;
+  return !voiceOn;
+}
+document.addEventListener('keydown',function(e){
+  if(e.key!==' '&&e.code!=='Space')return;
+  if(spaceBlocked(e))return;
+  e.preventDefault();
+  if(e.repeat||spaceDown)return;
+  spaceDown=true;spaceFired=false;
+  spaceT=setTimeout(function(){spaceT=0;spaceFired=true;try{if(navigator.vibrate)navigator.vibrate(18);}catch(x){}voiceWakeToggle();},700);
+},true);
+document.addEventListener('keyup',function(e){
+  if(e.key!==' '&&e.code!=='Space')return;
+  if(!spaceDown)return;
+  spaceDown=false;clearTimeout(spaceT);spaceT=0;
+  e.preventDefault();
+  if(!spaceFired&&voiceOn)voiceMicTap();
+},true);
+window.addEventListener('blur',function(){spaceDown=false;clearTimeout(spaceT);});
+window.addEventListener('load',function(){voiceInit();voiceUI();});
 if(VSYN){try{VSYN.getVoices();}catch(e){}try{VSYN.addEventListener('voiceschanged',voiceFillPicker);}catch(e){VSYN.onvoiceschanged=voiceFillPicker;}}
 setTimeout(voiceInit,0);
 
@@ -1856,7 +1976,7 @@ function waveSize(){
 function waveDraw(amp){ // amp(i,n) -> 0..1, drawn inside the small round indicator
   var c=document.getElementById('vWave');if(!c||!c.width)return;
   var d=window.devicePixelRatio||1,g=c.getContext('2d'),W=c.width,H=c.height,n=7;
-  var col=vWave.state==='speak'?'#d4a843':(vWave.state==='idle'?'rgba(128,128,128,.7)':'#e74c3c');
+  var col=vWave.state==='speak'?'#d4a843':(vWave.state==='wake'?'rgba(212,168,67,.6)':(vWave.state==='idle'?'rgba(128,128,128,.7)':'#e74c3c'));
   c.style.borderColor=col;
   g.clearRect(0,0,W,H);
   g.fillStyle=col;
@@ -1872,6 +1992,8 @@ function waveLoop(){
   vWave.t+=0.05;var t=vWave.t,st=vWave.state;
   if(st==='speak'){
     waveDraw(function(i){return 0.18+0.5*Math.abs(Math.sin(t*2.2+i*0.55))*(0.55+0.45*Math.sin(t*1.3+i*0.9));});
+  }else if(st==='wake'){
+    waveDraw(function(i){return 0.1+0.1*Math.sin(t*1.1+i*0.5);});
   }else{
     var target=(st==='voice')?(0.35+0.4*Math.abs(Math.sin(t*6.5))):0.04;
     vWave.lvl+=(target-vWave.lvl)*0.35;
