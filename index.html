@@ -247,6 +247,8 @@ body.drawing #drawBar{display:flex;}
 .dsep{width:1px;height:22px;background:rgba(128,128,128,.35);}
 #drawBtn.active{background:var(--gold);color:#0d1b2a;}
 .copy-btn{display:block;margin:18px auto 0;background:var(--bg2);border:1px solid rgba(128,128,128,.3);color:var(--grey);border-radius:16px;padding:6px 14px;font-size:11px;font-family:sans-serif;font-weight:700;cursor:pointer;}
+.copy-btn{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:box-shadow .7s linear,border-color .7s linear;}
+.copy-btn.holding{border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 3px rgba(212,168,67,.7);}
 .copy-btn.ok{border-color:#27ae60;color:#27ae60;}
 :root{--read:'Source Sans 3','Source Sans Pro','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;--qs:1;}
 .qtext{font-family:var(--read);font-size:calc(clamp(17px,2.4vw,21px) * var(--qs));line-height:1.65;font-weight:400;}
@@ -625,7 +627,7 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
     </div>
     <div id="vVoicePop"><label class="vchk"><input type="checkbox" id="vAutoChk" onchange="voiceAutoSet(this.checked)"> Auto-listen after reading</label><label class="vchk"><input type="checkbox" id="vWakeChk" onchange="voiceWakeSet(this.checked)"> Hands-free: say &ldquo;Hey Quiz&rdquo;</label><div class="vchk vhint">Space: tap = start voice / mic on-off &middot; hold = hands-free</div><select class="vsel" id="vVoice" aria-label="Choose voice" onchange="voicePick(this.value)"></select></div>
     <div class="kb-hint">&#8593; &#8595; choose &middot; Enter select / next &middot; A&ndash;E answer &middot; &#8592; clear / back &middot; &#8594; rule out / next &middot; X toggle &middot; S skip &middot; H hint &middot; Space mic (hold = hands-free)</div>
-    <button type="button" class="copy-btn" id="copyQBtn" onclick="copyQuestion()">Copy question &amp; options</button>
+    <button type="button" class="copy-btn" id="copyQBtn" onclick="copyQuestionClick()" oncontextmenu="return false" title="Tap to copy. Hold to send to Gemini">Copy question &amp; options</button>
   </div>
 </div>
 
@@ -3661,7 +3663,7 @@ function adjustTextSize(d){
   drawStore={};drawHist={}; // text reflows, so old marks would no longer line up
   if(typeof dRedraw==='function')dRedraw();
 }
-function copyQuestion(){
+function copyQuestion(toGemini){
   if(!qs||!qs.length)return;
   var q=qs[cur];
   var text='Question'+(q.s?' ('+q.s+')':'')+':\n'+stripHLMarkers(q.q)+'\n\n'+q.o.join('\n');
@@ -3674,13 +3676,14 @@ function copyQuestion(){
     else text+='\nMy answer: '+optText(mine)+(mine===q.a?' (correct)':' (wrong)');
     if(q.e&&String(q.e).trim())text+='\n\nTeaching point:\n'+String(q.e).trim();
   }
-  var btn=document.getElementById('copyQBtn');
+  var btn=document.getElementById('copyQBtn'),gw=null;
+  if(toGemini===true){try{gw=window.open(GEMINI_URL+'#sbaq='+encodeURIComponent(text),'_blank');}catch(e){}} // opened straight from the long press so the browser allows it
   function done(ok){
     if(!btn)return;
     btn.blur();
-    btn.textContent=ok?'Copied \u2713':'Copy failed - select the text manually';
+    btn.textContent=toGemini===true?(gw?(ok?'Sent to Gemini \u2713':'Opened Gemini (copy failed)'):'Copied. Allow pop-ups to open Gemini'):(ok?'Copied \u2713':'Copy failed - select the text manually');
     btn.classList.toggle('ok',ok);
-    setTimeout(function(){btn.textContent='Copy question & options';btn.classList.remove('ok');},1600);
+    setTimeout(function(){btn.textContent='Copy question & options';btn.classList.remove('ok');},toGemini===true?2600:1600);
   }
   function fallback(){
     var ta=document.createElement('textarea');
@@ -3696,6 +3699,20 @@ function copyQuestion(){
     navigator.clipboard.writeText(text).then(function(){done(true);},fallback);
   }else fallback();
 }
+var GEMINI_URL='https://gemini.google.com/app',copyHoldFired=false;
+function copyQuestionClick(){if(copyHoldFired){copyHoldFired=false;return;}copyQuestion();}
+// hold the button (~0.7 s): copy the question and open Gemini with it (the Tampermonkey script fills the chat box and sends it)
+(function(){
+  var tmr=0,sx=0,sy=0,btn=null;
+  function stop(){clearTimeout(tmr);tmr=0;if(btn)btn.classList.remove('holding');btn=null;}
+  document.addEventListener('pointerdown',function(e){
+    var b=e.target&&e.target.closest?e.target.closest('#copyQBtn'):null;if(!b)return;
+    stop();btn=b;sx=e.clientX;sy=e.clientY;copyHoldFired=false;b.classList.add('holding');
+    tmr=setTimeout(function(){tmr=0;copyHoldFired=true;b.classList.remove('holding');try{if(navigator.vibrate)navigator.vibrate(18);}catch(x){}copyQuestion(true);setTimeout(function(){copyHoldFired=false;},900);},700);
+  },true);
+  document.addEventListener('pointermove',function(e){if(tmr&&(Math.abs(e.clientX-sx)>10||Math.abs(e.clientY-sy)>10))stop();},true);
+  ['pointerup','pointercancel'].forEach(function(n){document.addEventListener(n,stop,true);});
+})();
 function toggleHint(){
   hintShown=!hintShown;
   document.getElementById('hintBox').className='hint-box'+(hintShown?' show':'');
