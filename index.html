@@ -2198,7 +2198,7 @@ function formatRich(text){
       if(lv===1){closeFold();out+='<div class="rt-h1">'+richInline(txt)+'</div>';}
       else if(lv===2){
         closeFold();
-        if(RT_FOLD_RX.test(txt)){out+='<details class="rt-fold" ontoggle="if(typeof dResize===\'function\')dResize()"><summary class="rt-h2">'+richInline(txt)+' <span class="rt-hint">(tap to show)</span></summary><div class="rt-foldbody">';inFold=true;}
+        if(RT_FOLD_RX.test(txt)){out+='<details class="rt-fold" open ontoggle="if(typeof dResize===\'function\')dResize()"><summary class="rt-h2">'+richInline(txt)+' <span class="rt-hint">(tap to show)</span></summary><div class="rt-foldbody">';inFold=true;}
         else out+='<div class="rt-h2">'+richInline(txt)+'</div>';
       }else out+='<div class="rt-h3">'+richInline(txt)+'</div>';
       return;
@@ -2317,7 +2317,7 @@ function edtEnsureSheet(){
    +'<div>Each line is its own paragraph; a blank line ends a list or quote.</div>'
    +'<div><code>| A | B |</code> then <code>|---|---|</code> then rows = table</div>'
    +'<div>New line inside a table cell: type <code>&lt;br&gt;</code> or press <b>Cmd/Ctrl/Option + Enter</b> (or the &crarr; Line button).</div>'
-   +'<div><code>## Why other options are incorrect</code> becomes a tap-to-open fold</div>'
+   +'<div><code>## Why other options are incorrect</code> becomes a fold that starts open (tap its title to collapse)</div>'
    +'<div><code>![caption](file.jpg)</code> shows an image (use the Add image button for new ones)</div>'
    +'<div>Side by side: put 2 or more images on the <b>same line</b>, only spaces between them: <code>![A](a.jpg) ![B](b.jpg)</code></div>'
    +'<div>Explanation only: a last line like <code>(Radiopaedia, Dahnert)</code> shows as a Source line.</div>'
