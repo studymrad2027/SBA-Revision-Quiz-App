@@ -2533,8 +2533,10 @@ function edtSave(){
 }
 
 var _snapCur=-1;
-// Snap targets (all screen sizes): toolbar row, first line of question, option A, explanation box, teaching point box.
+// Snap targets: toolbar row, first line of question, option A, explanation box, teaching point box.
 // Hidden boxes (explanation / teaching point before answering) are skipped automatically.
+// On a laptop/desktop (mouse or trackpad as the main pointer) the explanation and teaching point boxes are NOT snap targets; phones and tablets keep them.
+function snapSkipsTeaching(){try{return window.matchMedia('(hover:hover) and (pointer:fine)').matches;}catch(e){return false;}}
 function snapTargets(){
   var h=document.querySelector('#exam .hdr');if(!h)return [];
   var hh=h.offsetHeight,base=window.pageYOffset,out=[];
@@ -2542,7 +2544,7 @@ function snapTargets(){
     if(!el||!el.getBoundingClientRect)return;
     var r=el.getBoundingClientRect();
     if(!r.width&&!r.height)return;
-    if(el.id==='expBox'||el.id==='kpBox'){if(!el.classList.contains('show'))return;}
+    if(el.id==='expBox'||el.id==='kpBox'){if(!el.classList.contains('show')||snapSkipsTeaching())return;}
     out.push({t:Math.max(0,Math.round(r.top+base-hh-(pad==null?4:pad))),tb:!!tb});
   }
   add(document.querySelector('#exam .qtag-row'),4,true); // toolbar row (small catch zone above it, normal below)

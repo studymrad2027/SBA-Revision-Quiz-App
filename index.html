@@ -2533,8 +2533,11 @@ function snapTargets(){
   add(document.querySelector('#exam .qtag-row'),4,true); // toolbar row (small catch zone above it, normal below)
   add(document.getElementById('qText'),8,true);
   add(document.querySelector('#optsList .opt'),8);
-  add(document.getElementById('expBox'),8);
-  add(document.getElementById('kpBox'),8);
+  var laptop=false;try{laptop=window.matchMedia('(hover:hover) and (pointer:fine)').matches;}catch(e){}
+  if(!laptop){ // laptops/desktops (mouse or trackpad) do not snap to these two boxes; tablets and phones still do
+    add(document.getElementById('expBox'),8);
+    add(document.getElementById('kpBox'),8);
+  }
   return out;
 }
 function snapToQuestion(force){
