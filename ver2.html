@@ -3523,6 +3523,8 @@ function syncStart(raw){
     var ch=SYNC.sb.channel('quiz-'+code);SYNC.ch=ch;
     // a tablet that connects late (or wakes up) asks for the current question
     ch.on('broadcast',{event:'hello'},function(){if(SYNC.ch===ch&&SYNC.last)syncSend(SYNC.last);})
+      .on('broadcast',{event:'answer'},function(m){if(SYNC.ch===ch)syncRemoteAnswer(m&&m.payload);})
+      .on('broadcast',{event:'nav'},function(m){if(SYNC.ch===ch)syncRemoteNav(m&&m.payload);})
       .subscribe(function(st){
         if(SYNC.ch!==ch)return;
         if(st==='SUBSCRIBED'){
@@ -3551,6 +3553,36 @@ function syncAfterRender(){
     var p={t:Date.now(),k:qKey(q),n:cur+1,tot:qs.length,s:q.s||'',q:stripHLMarkers(q.q),o:q.o,img:imgSrc(q.img),phase:isA?'answered':'asking',mode:mode};
     if(isA){p.a=q.a;p.mine=a;p.e=String(q.e||'');p.kp=String(q.kp||'');p.topic=q.topic||'';p.ref=q.ref||'';}
     syncSend(p);
+  }catch(e){}
+}
+// an answer tapped on a tablet: accepted only for the question you are on, and only if it is still unanswered
+function syncRemoteAnswer(p){
+  try{
+    var ex=document.getElementById('exam');
+    var onExam=!!(ex&&ex.classList.contains('active')&&qs&&qs.length&&qs[cur]);
+    var q=onExam?qs[cur]:null;
+    var L=p?String(p.L||''):'';
+    var ok=!!(q&&p&&ans[cur]===null&&p.k===qKey(q)&&/^[A-E]$/.test(L)&&q.o.some(function(o){return o.charAt(0)===L;}));
+    if(ok)pick(L);                              // pick() re-renders, which sends the result to the tablets
+    else if(onExam)syncAfterRender();           // not accepted: tell the tablet where the quiz really is
+    else syncIdle();
+  }catch(e){}
+}
+// next / previous / skip tapped on a tablet: same rules as the on-screen buttons (none of them exist in timed mode)
+function syncRemoteNav(p){
+  try{
+    var ex=document.getElementById('exam');
+    var onExam=!!(ex&&ex.classList.contains('active')&&qs&&qs.length&&qs[cur]);
+    var q=onExam?qs[cur]:null;
+    var c=p?String(p.cmd||''):'';
+    var ok=!!(q&&p&&mode!=='timed'&&p.k===qKey(q));
+    if(ok){
+      if(c==='next'&&cur<qs.length-1)nextQ();
+      else if(c==='prev'&&cur>0)prevQ();
+      else if(c==='skip'&&ans[cur]===null)skipQ();
+      else ok=false;
+    }
+    if(!ok){if(onExam)syncAfterRender();else syncIdle();}   // not accepted: tell the tablet where the quiz really is
   }catch(e){}
 }
 function syncIdle(){try{syncSend({t:Date.now(),phase:'idle'});}catch(e){}}

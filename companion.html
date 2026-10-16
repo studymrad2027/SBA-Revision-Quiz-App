@@ -27,6 +27,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .tools{display:flex;flex-wrap:wrap;gap:4px}
 .tools button{border:1px solid var(--line);border-radius:10px;color:var(--mut)}
 .tools button[aria-pressed=true]{color:var(--tx);border-color:var(--gold)}
+.tools button.ico{min-width:46px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center}
+.tools button.ico svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 #setup{max-width:460px;margin:8vh auto 0;padding:0 20px}
 #setup h1{font-family:Georgia,'Times New Roman',serif;font-size:1.7rem;line-height:1.2;margin:0 0 8px}
@@ -46,6 +48,12 @@ main{display:grid;gap:16px;padding:16px;max-width:1240px;margin:0 auto}
 .opt{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
 .opt .L{flex:none;width:1.9em;height:1.9em;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);font-weight:700;font-size:.85em}
 .opt small{display:block;font-size:.78rem;margin-top:2px;color:var(--mut)}
+button.opt{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;min-height:50px}
+button.opt:disabled{cursor:default;opacity:.7}
+.opt.sel{border-color:var(--gold);background:rgba(212,168,67,.16)}
+.navrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.navrow .btn{justify-content:center;width:100%}
+.btn:disabled{opacity:.4;cursor:default}
 .opt.ok{border-color:var(--ok);background:rgba(39,174,96,.14)}.opt.ok small{color:var(--okt);font-weight:700}
 .opt.bad{border-color:var(--bad);background:rgba(231,76,60,.13)}.opt.bad small{color:var(--badt);font-weight:700}
 .note{color:var(--mut);font-size:.9rem;margin:12px 0 0}
@@ -73,6 +81,21 @@ th{background:var(--panel2)}
 .aibox{border:1px dashed var(--line);border-radius:10px;padding:12px 14px;color:var(--mut);font-size:.92rem;margin:0 0 14px}
 details{margin-top:6px}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--mut)}
 
+/* Reference tab: small question card, most of the screen for the explanation */
+@media(min-width:860px){body.r-ref main{grid-template-columns:minmax(0,.6fr) minmax(0,1.4fr)}}
+body.r-ref #qcard{padding:12px 14px}
+body.r-ref .meta{font-size:.78rem;margin-bottom:6px}
+body.r-ref .stem{font-size:.98rem;line-height:1.4;margin-bottom:10px}
+body.r-ref .qimg{max-height:150px;margin-bottom:10px}
+body.r-ref .opts{gap:5px}
+body.r-ref .opt{padding:6px 9px;gap:9px;font-size:.88rem}
+body.r-ref button.opt{min-height:44px}
+body.r-ref .opt small{font-size:.7rem}
+body.r-ref .note{font-size:.82rem;margin-top:8px}
+body.r-ref .navrow{margin-top:10px}
+body.r-ref .navrow .btn{min-height:44px;font-size:.85rem}
+body.r-ref #panel{padding:20px 24px;font-size:1.06em}
+
 #zoom{position:fixed;inset:0;background:rgba(0,0,0,.92);display:grid;place-items:center;z-index:20;cursor:zoom-out}
 #zoom img{max-width:96vw;max-height:94vh}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -92,6 +115,8 @@ details{margin-top:6px}summary{cursor:pointer;min-height:44px;display:flex;align
     <button type="button" id="bMinus" aria-label="Smaller text">A&minus;</button>
     <button type="button" id="bPlus" aria-label="Larger text">A+</button>
     <button type="button" id="bTheme" aria-pressed="false">Light</button>
+    <button type="button" id="bFull" class="ico" aria-pressed="false" aria-label="Full screen" title="Full screen"></button>
+    <button type="button" id="bConfirm" aria-pressed="true" title="Tap an option, then press Submit. Turn off to send on the first tap.">Confirm taps</button>
     <button type="button" id="bAwake" aria-pressed="false">Stay awake</button>
     <button type="button" id="bSync" aria-label="Ask the quiz to send the current question again">Refresh</button>
     <button type="button" id="bCode">Code</button>
@@ -119,7 +144,7 @@ details{margin-top:6px}summary{cursor:pointer;min-height:44px;display:flex;align
 (function(){
 var SUPABASE_URL='https://hdbbewazxtvpcjrtdtqq.supabase.co',SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkYmJld2F6eHR2cGNqcnRkdHFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4MDYyNTcsImV4cCI6MjEwNjM4MjI1N30.f2FNEwyddGknkzWYoJxmgsH8dqCcR0kLEs6jfAB2VkY';
 var $=function(id){return document.getElementById(id);};
-var S={code:'',role:'ref',sb:null,ch:null,d:null,lastT:0,fs:1,awake:false,wl:null};
+var S={code:'',role:'ref',sb:null,ch:null,d:null,lastT:0,fs:1,awake:false,wl:null,sel:'',sending:false,sendT:0,confirm:true,navBusy:false,navT:0};
 
 function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){}return null;}
 function esc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -210,12 +235,27 @@ function render(){
   if(d.img)h+='<img class="qimg" src="'+esc(d.img)+'" alt="Question image" data-zoom="1">';
   h+='<ol class="opts">'+d.o.map(function(o){
     var L=o.charAt(0),t=o.slice(3),c='',tag='';
+    if(!done){
+      return '<li><button type="button" class="opt'+(S.sel===L?' sel':'')+'" data-pick="'+esc(L)+'"'+(S.sending?' disabled':'')+'><span class="L">'+esc(L)+'</span><span class="t">'+esc(t)+'</span></button></li>';
+    }
     if(done){
       if(L===d.a){c='ok';tag=(L===d.mine)?'Correct, and your answer':'Correct answer';}
       else if(L===d.mine){c='bad';tag='Your answer';}
     }
     return '<li class="opt '+c+'"><span class="L">'+esc(L)+'</span><span class="t">'+esc(t)+(tag?'<small>'+tag+'</small>':'')+'</span></li>';
   }).join('')+'</ol>';
+  if(!done){
+    if(S.sending)h+='<p class="note">Sent. Waiting for the quiz...</p>';
+    else if(S.confirm&&S.sel)h+='<div class="actions"><button type="button" class="btn main" data-send="1">Submit answer '+esc(S.sel)+'</button></div>';
+    else h+='<p class="note">'+(S.confirm?'Tap an option to choose it, then submit.':'Tap an option to answer.')+'</p>';
+  }
+  if(d.mode!=='timed'){
+    h+='<div class="navrow">'
+      +'<button type="button" class="btn" data-nav="prev"'+((d.n<=1||S.navBusy)?' disabled':'')+'>Previous</button>'
+      +'<button type="button" class="btn" data-nav="skip"'+((done||S.navBusy)?' disabled':'')+'>Skip</button>'
+      +'<button type="button" class="btn main" data-nav="next"'+((d.n>=d.tot||S.navBusy)?' disabled':'')+'>Next</button>'
+      +'</div>';
+  }
   qc.innerHTML=h;
 
   var p='';
@@ -236,11 +276,31 @@ function render(){
 function onData(p){
   if(!p)return;
   if(p.t&&p.t<S.lastT)return;
+  if(!S.d||S.d.k!==p.k||p.phase!=='asking')S.sel='';
+  S.sending=false;clearTimeout(S.sendT);S.navBusy=false;clearTimeout(S.navT);
   S.lastT=p.t||Date.now();S.d=p;
   setStatus('live',p.phase==='idle'?'Connected, waiting for a question':'Receiving, updated '+clock());
   render();
 }
 function hello(){if(S.ch){try{S.ch.send({type:'broadcast',event:'hello',payload:{}});}catch(e){}}}
+function sendAnswer(L){
+  var d=S.d;
+  if(!d||d.phase!=='asking'||!S.ch||S.sending||!L)return;
+  S.sending=true;render();
+  try{S.ch.send({type:'broadcast',event:'answer',payload:{k:d.k,L:L,t:Date.now()}});}
+  catch(e){S.sending=false;toast('Could not send the answer');render();return;}
+  clearTimeout(S.sendT);
+  S.sendT=setTimeout(function(){if(S.sending){S.sending=false;toast('No reply from the quiz. Is it still on this question?');render();}},5000);
+}
+function sendNav(cmd){
+  var d=S.d;
+  if(!d||!d.q||!S.ch||S.navBusy||S.sending||d.mode==='timed')return;
+  S.navBusy=true;render();
+  try{S.ch.send({type:'broadcast',event:'nav',payload:{k:d.k,cmd:cmd,t:Date.now()}});}
+  catch(e){S.navBusy=false;toast('Could not send');render();return;}
+  clearTimeout(S.navT);
+  S.navT=setTimeout(function(){if(S.navBusy){S.navBusy=false;toast('No reply from the quiz');render();}},4000);
+}
 function disconnect(){try{if(S.ch&&S.sb)S.sb.removeChannel(S.ch);}catch(e){}S.ch=null;}
 function connect(raw){
   var code=String(raw||'').toLowerCase().replace(/[^a-z0-9_-]/g,'').slice(0,24);
@@ -266,7 +326,7 @@ function connect(raw){
 /* ---- controls ---- */
 function setRole(r){
   if(r!=='ref'&&r!=='ai'&&r!=='mirror')r='ref';
-  S.role=r;store('sba_comp_role',r);
+  S.role=r;store('sba_comp_role',r);document.body.classList.toggle('r-ref',r==='ref');
   Array.prototype.forEach.call(document.querySelectorAll('.roles button'),function(b){b.setAttribute('aria-pressed',b.getAttribute('data-r')===r?'true':'false');});
   render();
 }
@@ -277,6 +337,27 @@ function wakeOn(){
   navigator.wakeLock.request('screen').then(function(l){S.wl=l;S.awake=true;l.addEventListener('release',function(){S.wl=null;});$('bAwake').setAttribute('aria-pressed','true');toast('Screen will stay awake');},function(){toast('Could not keep the screen awake');});
 }
 function wakeOff(){S.awake=false;if(S.wl){try{S.wl.release();}catch(e){}S.wl=null;}$('bAwake').setAttribute('aria-pressed','false');}
+
+function fsElement(){return document.fullscreenElement||document.webkitFullscreenElement||null;}
+var ICO_ENTER='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+var ICO_EXIT='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+function fsUI(){var on=!!fsElement();var b=$('bFull');b.innerHTML=on?ICO_EXIT:ICO_ENTER;b.setAttribute('aria-label',on?'Exit full screen':'Full screen');b.title=on?'Exit full screen':'Full screen';b.setAttribute('aria-pressed',on?'true':'false');}
+function toggleFull(){
+  var de=document.documentElement;
+  try{
+    if(fsElement()){
+      var x=document.exitFullscreen||document.webkitExitFullscreen;if(x)x.call(document);
+    }else{
+      var r=de.requestFullscreen||de.webkitRequestFullscreen;
+      if(!r){toast('This browser has no full screen. On iPad, use Share, then Add to Home Screen');return;}
+      var p=r.call(de);if(p&&p.catch)p.catch(function(){toast('Full screen was blocked');});
+    }
+  }catch(e){toast('Full screen is not available here');}
+}
+$('bFull').onclick=toggleFull;
+fsUI();
+document.addEventListener('fullscreenchange',fsUI);
+document.addEventListener('webkitfullscreenchange',fsUI);
 
 document.querySelector('.roles').addEventListener('click',function(e){var b=e.target.closest('button');if(b)setRole(b.getAttribute('data-r'));});
 $('bMinus').onclick=function(){setFs(S.fs-.1);};
@@ -294,7 +375,21 @@ $('panel').addEventListener('click',function(e){
   if(act==='gemini'){try{w=window.open('https://gemini.google.com/app','_blank');}catch(x){}}
   copyText(text,function(ok){toast(ok?(act==='gemini'?(w?'Prompt copied. Paste it into Gemini':'Prompt copied. Allow pop-ups to open Gemini'):'Prompt copied'):'Copy failed');});
 });
-$('qcard').addEventListener('click',function(e){var im=e.target.closest('[data-zoom]');if(im){$('zoom').querySelector('img').src=im.src;$('zoom').hidden=false;}});
+$('qcard').addEventListener('click',function(e){
+  var im=e.target.closest('[data-zoom]');
+  if(im){$('zoom').querySelector('img').src=im.src;$('zoom').hidden=false;return;}
+  var nv=e.target.closest('[data-nav]');
+  if(nv){sendNav(nv.getAttribute('data-nav'));return;}
+  var pk=e.target.closest('[data-pick]');
+  if(pk&&S.d&&S.d.phase==='asking'&&!S.sending){
+    var L=pk.getAttribute('data-pick');
+    if(S.confirm){S.sel=L;render();}else{S.sel=L;sendAnswer(L);}
+    return;
+  }
+  if(e.target.closest('[data-send]'))sendAnswer(S.sel);
+});
+function setConfirm(on){S.confirm=on;$('bConfirm').setAttribute('aria-pressed',on?'true':'false');store('sba_comp_confirm',on?'1':'0');S.sel='';render();}
+$('bConfirm').onclick=function(){setConfirm(!S.confirm);};
 $('zoom').onclick=function(){this.hidden=true;};
 document.addEventListener('keydown',function(e){if(e.key==='Escape')$('zoom').hidden=true;});
 document.addEventListener('visibilitychange',function(){
@@ -308,6 +403,7 @@ document.addEventListener('visibilitychange',function(){
   var qp=new URLSearchParams(location.search);
   var fs=parseFloat(store('sba_comp_fs'));if(fs>0)setFs(fs);
   setTheme(store('sba_comp_theme')==='light');
+  S.confirm=store('sba_comp_confirm')!=='0';$('bConfirm').setAttribute('aria-pressed',S.confirm?'true':'false');
   setRole(qp.get('role')||store('sba_comp_role')||'ref');
   var code=qp.get('code')||store('sba_comp_code')||'';
   if(code)connect(code);else showSetup(true);
