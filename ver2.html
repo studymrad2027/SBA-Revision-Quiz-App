@@ -75,6 +75,8 @@ button{font-family:Georgia,serif;cursor:pointer;}
 .exp-box.show{display:block;}
 .exp-lbl,.kp-lbl{position:relative;background:rgba(128,128,128,.14);border-bottom:1px solid rgba(128,128,128,.2);padding:12px 44px;text-align:center;font-size:14px;font-weight:700;letter-spacing:.2px;text-transform:none;color:var(--wh);font-family:sans-serif;margin:0;}
 .ed-ico{position:absolute;right:8px;top:50%;margin-top:-17px;transform:none;width:34px;height:34px;border:0;border-radius:50%;background:transparent;font-size:15px;line-height:1;padding:0;cursor:pointer;color:inherit;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:box-shadow .6s linear,background .6s linear;}
+.edt-qg{font-size:11.5px;color:var(--tx);display:none;line-height:1.5;}
+.edt-qg code{background:rgba(128,128,128,.18);padding:1px 5px;border-radius:4px;}
 .ed-ico:active,.ed-ico.holding:active{transform:none!important;filter:none!important;}
 .ed-ico.holding{background:rgba(212,168,67,.35);box-shadow:0 0 0 3px rgba(212,168,67,.8),0 0 16px rgba(212,168,67,.7);}
 .exp-txt,.kp-txt{padding:6px 16px 14px;font-size:13px;line-height:1.65;color:var(--tx);text-align:left;overflow-wrap:break-word;}
@@ -245,6 +247,8 @@ body.drawing #drawBar{display:flex;}
 .dsep{width:1px;height:22px;background:rgba(128,128,128,.35);}
 #drawBtn.active{background:var(--gold);color:#0d1b2a;}
 .copy-btn{display:block;margin:18px auto 0;background:var(--bg2);border:1px solid rgba(128,128,128,.3);color:var(--grey);border-radius:16px;padding:6px 14px;font-size:11px;font-family:sans-serif;font-weight:700;cursor:pointer;}
+.copy-btn{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:box-shadow .7s linear,border-color .7s linear;}
+.copy-btn.holding{border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 3px rgba(212,168,67,.7);}
 .copy-btn.ok{border-color:#27ae60;color:#27ae60;}
 :root{--read:'Source Sans 3','Source Sans Pro','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;--qs:1;}
 .qtext{font-family:var(--read);font-size:calc(clamp(17px,2.4vw,21px) * var(--qs));line-height:1.65;font-weight:400;}
@@ -284,6 +288,11 @@ body.drawing #drawBar{display:flex;}
 .username-box label{display:block;font-size:10px;color:var(--grey);text-transform:uppercase;letter-spacing:1px;font-family:sans-serif;margin-bottom:4px;}
 .username-box input{width:100%;box-sizing:border-box;background:var(--bg2);border:1px solid rgba(128,128,128,.25);border-radius:8px;padding:9px 12px;color:var(--tx);font-size:13px;font-family:sans-serif;}
 .sync-status{font-size:11px;font-family:sans-serif;text-align:center;margin:6px 0 4px;color:var(--grey);}
+.pair-row{display:flex;gap:6px;}
+.pair-row input{flex:1;min-width:0;}
+.pair-row button{flex:none;background:var(--bg2);color:var(--tx);border:1px solid rgba(128,128,128,.25);border-radius:8px;padding:0 14px;font-size:12px;font-family:sans-serif;font-weight:700;cursor:pointer;}
+.pair-row button.on{border-color:var(--gold);color:var(--gold);}
+.pair-note{font-size:11px;font-family:sans-serif;margin-top:5px;color:var(--grey);line-height:1.4;}
 .lb-table{width:100%;border-collapse:collapse;font-size:12px;font-family:sans-serif;}
 .lb-table th,.lb-table td{padding:8px 6px;text-align:left;border-bottom:1px solid rgba(128,128,128,.15);}
 .lb-table th{color:var(--grey);text-transform:uppercase;font-size:9px;letter-spacing:1px;}
@@ -476,6 +485,7 @@ body.voice-open #exam{padding-bottom:160px;}
 html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
 <body>
 <div class="top-ctl" id="topCtl">
@@ -537,6 +547,15 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
     <input type="text" id="usernameInput" maxlength="24" placeholder="e.g. Ahmad" oninput="saveUsername(this.value)" onchange="loadSavedProgressList()">
   </div>
 
+  <div class="username-box">
+    <label for="syncCodeInput">Companion screens (pairing code)</label>
+    <div class="pair-row">
+      <input type="text" id="syncCodeInput" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="6+ letters or numbers" onkeydown="if(event.key==='Enter')syncToggle()">
+      <button type="button" id="syncBtn" onclick="syncToggle()">Connect</button>
+    </div>
+    <div class="pair-note" id="syncStatus">Not connected.</div>
+  </div>
+
   <div id="resumeList"></div>
   <div class="set-grid" id="setGrid"></div>
   <div class="home-btns">
@@ -596,11 +615,11 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
     </div>
     <div class="opts" id="optsList"></div>
     <div class="exp-box" id="expBox">
-      <div class="exp-lbl">Explanation<button type="button" class="ed-ico" data-w="e" aria-label="Hold to edit" title="Hold to edit" oncontextmenu="return false">&#128161;</button></div>
+      <div class="exp-lbl">Explanation<button type="button" class="ed-ico" data-w="e" aria-label="Hold to edit" title="Hold to edit (explanation, teaching point and question wording)" oncontextmenu="return false">&#128161;</button></div>
       <div class="exp-txt" id="expTxt"></div>
     </div>
     <div class="kp-box" id="kpBox">
-      <div class="kp-lbl">Teaching Point<button type="button" class="ed-ico" data-w="kp" aria-label="Hold to edit" title="Hold to edit" oncontextmenu="return false">&#128221;</button></div>
+      <div class="kp-lbl">Teaching Point<button type="button" class="ed-ico" data-w="kp" aria-label="Hold to edit" title="Hold to edit (explanation, teaching point and question wording)" oncontextmenu="return false">&#128221;</button></div>
       <div class="kp-txt" id="kpTxt"></div>
     </div>
     <div class="ex-foot" id="exFoot"></div>
@@ -621,9 +640,9 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
         <button type="button" class="vib" aria-label="Close voice panel" title="Close" onclick="voiceClose()"><svg class="vic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
     </div>
-    <div id="vVoicePop"><label class="vchk"><input type="checkbox" id="vAutoChk" onchange="voiceAutoSet(this.checked)"> Auto-listen after reading</label><label class="vchk"><input type="checkbox" id="vWakeChk" onchange="voiceWakeSet(this.checked)"> Hands-free: say &ldquo;Hey Quiz&rdquo;</label><div class="vchk vhint">Space: tap = mic on/off &middot; hold = hands-free on/off</div><select class="vsel" id="vVoice" aria-label="Choose voice" onchange="voicePick(this.value)"></select></div>
+    <div id="vVoicePop"><label class="vchk"><input type="checkbox" id="vAutoChk" onchange="voiceAutoSet(this.checked)"> Auto-listen after reading</label><label class="vchk"><input type="checkbox" id="vWakeChk" onchange="voiceWakeSet(this.checked)"> Hands-free: say &ldquo;Hey Quiz&rdquo;</label><div class="vchk vhint">Space: tap = start voice / mic on-off &middot; hold = hands-free</div><select class="vsel" id="vVoice" aria-label="Choose voice" onchange="voicePick(this.value)"></select></div>
     <div class="kb-hint">&#8593; &#8595; choose &middot; Enter select / next &middot; A&ndash;E answer &middot; &#8592; clear / back &middot; &#8594; rule out / next &middot; X toggle &middot; S skip &middot; H hint &middot; Space mic (hold = hands-free)</div>
-    <button type="button" class="copy-btn" id="copyQBtn" onclick="copyQuestion()">Copy question &amp; options</button>
+    <button type="button" class="copy-btn" id="copyQBtn" onclick="copyQuestionClick()" oncontextmenu="return false" title="Tap to copy. Hold to send to Gemini">Copy question &amp; options</button>
   </div>
 </div>
 
@@ -780,7 +799,7 @@ function supaRowToExcelRow(r){
     'Set':r.set_name||'1','System':r.system,'Question':r.question,
     'Option A':r.option_a,'Option B':r.option_b,'Option C':r.option_c,'Option D':r.option_d,'Option E':r.option_e,
     'Correct Answer':r.correct_answer,'Explanation':r.explanation,'Reference':r.reference,'Image Path/URL':r.image_url,
-    'Difficulty':r.difficulty,'Topic':r.topic,'Key Point':r.key_point,'Hint':r.hint,'Book':r.book||'','ID':r.id==null?'':r.id
+    'Difficulty':r.difficulty,'Topic':r.topic,'Key Point':r.key_point,'Hint':r.hint,'Book':r.book||'','ID':r.id==null?'':r.id,'OrigKey':r.orig_key||''
   };
 }
 // =====================================================================================
@@ -1143,6 +1162,7 @@ function convertExcelRows(rows){
       hint:g('Hint'),
       notes:g('Notes'),
       id:g('ID'),
+      ok:g('OrigKey'),
       book:normBook(g('Book')),
       set:g('Set')||'1'
     });
@@ -1942,7 +1962,7 @@ function spaceBlocked(e){
   if(!ex||!ex.classList.contains('active'))return true;
   if(hlEd.on||edt.on)return true;
   if(document.getElementById('hcov').classList.contains('show')||document.getElementById('timeup-ov').classList.contains('show'))return true;
-  return !voiceOn;
+  return mode==='timed';
 }
 document.addEventListener('keydown',function(e){
   if(e.key!==' '&&e.code!=='Space')return;
@@ -1950,14 +1970,14 @@ document.addEventListener('keydown',function(e){
   e.preventDefault();
   if(e.repeat||spaceDown)return;
   spaceDown=true;spaceFired=false;
-  spaceT=setTimeout(function(){spaceT=0;spaceFired=true;try{if(navigator.vibrate)navigator.vibrate(18);}catch(x){}voiceWakeToggle();},700);
+  spaceT=setTimeout(function(){spaceT=0;spaceFired=true;try{if(navigator.vibrate)navigator.vibrate(18);}catch(x){}if(!voiceOn){voiceToggle();if(voiceOn)voiceWakeSet(true);}else voiceWakeToggle();},700);
 },true);
 document.addEventListener('keyup',function(e){
   if(e.key!==' '&&e.code!=='Space')return;
   if(!spaceDown)return;
   spaceDown=false;clearTimeout(spaceT);spaceT=0;
   e.preventDefault();
-  if(!spaceFired&&voiceOn)voiceMicTap();
+  if(!spaceFired){if(!voiceOn)voiceToggle();else voiceMicTap();}
 },true);
 window.addEventListener('blur',function(){spaceDown=false;clearTimeout(spaceT);});
 window.addEventListener('load',function(){voiceInit();voiceUI();});
@@ -2018,7 +2038,7 @@ document.addEventListener('pointerdown',function(e){
 },true);
 
 function qKey(q){
-  if(!q._k)q._k=qHash(stripHLMarkers(q.q).toLowerCase().replace(/\s+/g,' ').trim());
+  if(!q._k)q._k=q.ok||qHash(stripHLMarkers(q.q).toLowerCase().replace(/\s+/g,' ').trim());
   return q._k;
 }
 function shuffleRandom(arr){
@@ -2195,7 +2215,7 @@ function formatRich(text){
       if(lv===1){closeFold();out+='<div class="rt-h1">'+richInline(txt)+'</div>';}
       else if(lv===2){
         closeFold();
-        if(RT_FOLD_RX.test(txt)){out+='<details class="rt-fold" ontoggle="if(typeof dResize===\'function\')dResize()"><summary class="rt-h2">'+richInline(txt)+' <span class="rt-hint">(tap to show)</span></summary><div class="rt-foldbody">';inFold=true;}
+        if(RT_FOLD_RX.test(txt)){out+='<details class="rt-fold" open ontoggle="if(typeof dResize===\'function\')dResize()"><summary class="rt-h2">'+richInline(txt)+' <span class="rt-hint">(tap to show)</span></summary><div class="rt-foldbody">';inFold=true;}
         else out+='<div class="rt-h2">'+richInline(txt)+'</div>';
       }else out+='<div class="rt-h3">'+richInline(txt)+'</div>';
       return;
@@ -2236,9 +2256,10 @@ function exFootHTML(q){
 
 
 /* ===== explanation / teaching point editor (hold the 💡 / 📝 icon) ===== */
-var EDT_SQL='create table if not exists public.question_edits (\n  qkey text primary key,\n  explanation text,\n  key_point text,\n  updated_at timestamptz default now()\n);\nalter table public.question_edits enable row level security;\ncreate policy "edits read" on public.question_edits for select using (true);\ncreate policy "edits insert" on public.question_edits for insert with check (true);\ncreate policy "edits update" on public.question_edits for update using (true) with check (true);';
-var EDIT_OV={}; // qkey -> {e,kp}: saved edits for the built-in (hard-coded) questions
-var edt={on:false,q:null,which:'e',orig:{e:'',kp:''},val:{e:'',kp:''},db:false,busy:false,tmr:0};
+var EDT_SQL_Q='alter table public.question_edits add column if not exists question text;\nalter table public.questions add column if not exists orig_key text;';
+var EDT_SQL='create table if not exists public.question_edits (\n  qkey text primary key,\n  explanation text,\n  key_point text,\n  question text,\n  updated_at timestamptz default now()\n);\nalter table public.question_edits enable row level security;\ncreate policy "edits read" on public.question_edits for select using (true);\ncreate policy "edits insert" on public.question_edits for insert with check (true);\ncreate policy "edits update" on public.question_edits for update using (true) with check (true);';
+var EDIT_OV={}; // qkey -> {e,kp,q}: saved edits for the built-in (hard-coded) questions
+var edt={on:false,q:null,which:'e',orig:{e:'',kp:'',q:''},val:{e:'',kp:'',q:''},db:false,busy:false,tmr:0};
 function edtN(s){return String(s==null?'':s).replace(/\r/g,'').trim();}
 function edtIsDb(q){return !!(q&&q.id&&/^\d+$/.test(String(q.id)));}
 function edtApplyOv(list){
@@ -2246,7 +2267,8 @@ function edtApplyOv(list){
   var ch=false;
   list.forEach(function(q){
     if(!q||edtIsDb(q))return;
-    var o=EDIT_OV[qKey(q)];if(!o)return;
+    var k=qKey(q),o=EDIT_OV[k];if(!o)return;
+    if(o.q!=null&&o.q&&q.q!==o.q){q.ok=k;q._k=k;q.q=o.q;ch=true;} // keep the original key so history stays linked
     if(o.e!=null&&q.e!==o.e){q.e=o.e;ch=true;}
     if(o.kp!=null&&q.kp!==o.kp){q.kp=o.kp;ch=true;}
   });
@@ -2260,11 +2282,11 @@ function edtApplyOvAll(){
 }
 function loadEditOverrides(){
   if(!supaReady())return;
-  fetch(SUPABASE_URL+'/rest/v1/question_edits?select=qkey,explanation,key_point',{headers:supaHeaders(),cache:'no-store'})
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+  function get(cols){return fetch(SUPABASE_URL+'/rest/v1/question_edits?select='+cols,{headers:supaHeaders(),cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();});}
+  get('qkey,explanation,key_point,question').catch(function(){return get('qkey,explanation,key_point');}) // the question column may not exist yet
     .then(function(rows){
       EDIT_OV={};
-      (rows||[]).forEach(function(x){EDIT_OV[x.qkey]={e:x.explanation==null?null:edtN(x.explanation),kp:x.key_point==null?null:edtN(x.key_point)};});
+      (rows||[]).forEach(function(x){EDIT_OV[x.qkey]={e:x.explanation==null?null:edtN(x.explanation),kp:x.key_point==null?null:edtN(x.key_point),q:x.question==null?null:edtN(x.question)};});
       var ch=edtApplyOvAll();
       var ex=document.getElementById('exam');
       if(ch&&!edt.on&&ex&&ex.classList.contains('active')&&qs&&qs.length)renderQ();
@@ -2290,8 +2312,9 @@ function edtEnsureSheet(){
   if(document.getElementById('edtSheet'))return;
   var d=document.createElement('div');d.id='edtSheet';
   d.innerHTML='<div class="edt-in">'
-   +'<div class="edt-head"><div class="edt-tabs"><button type="button" data-w="e" onclick="edtTab(\'e\')">Explanation</button><button type="button" data-w="kp" onclick="edtTab(\'kp\')">Teaching point</button></div><span class="edt-where" id="edtWhere"></span></div>'
-   +'<div class="edt-tools" onmousedown="event.preventDefault()">'
+   +'<div class="edt-head"><div class="edt-tabs"><button type="button" data-w="q" onclick="edtTab(\'q\')">Question</button><button type="button" data-w="e" onclick="edtTab(\'e\')">Explanation</button><button type="button" data-w="kp" onclick="edtTab(\'kp\')">Teaching point</button></div><span class="edt-where" id="edtWhere"></span></div>'
+   +'<div class="edt-qg" id="edtQg">Edit the wording freely. Keep highlight markers such as <code>[[CT:words]]</code> (tags: CT MRI US XR NM AN H IMG Q NONE) around the words you want coloured. Your answer history stays linked to this question even after the wording changes.</div>'
+   +'<div class="edt-tools" id="edtTools" onmousedown="event.preventDefault()">'
    +'<button type="button" onclick="edtLine(\'## \')" title="Heading">## H</button>'
    +'<button type="button" onclick="edtWrap(\'**\',\'**\')" title="Bold"><b>B</b></button>'
    +'<button type="button" onclick="edtWrap(\'*\',\'*\')" title="Italic"><i>I</i></button>'
@@ -2311,7 +2334,7 @@ function edtEnsureSheet(){
    +'<div>Each line is its own paragraph; a blank line ends a list or quote.</div>'
    +'<div><code>| A | B |</code> then <code>|---|---|</code> then rows = table</div>'
    +'<div>New line inside a table cell: type <code>&lt;br&gt;</code> or press <b>Cmd/Ctrl/Option + Enter</b> (or the &crarr; Line button).</div>'
-   +'<div><code>## Why other options are incorrect</code> becomes a tap-to-open fold</div>'
+   +'<div><code>## Why other options are incorrect</code> becomes a fold that starts open (tap its title to collapse)</div>'
    +'<div><code>![caption](file.jpg)</code> shows an image (use the Add image button for new ones)</div>'
    +'<div>Side by side: put 2 or more images on the <b>same line</b>, only spaces between them: <code>![A](a.jpg) ![B](b.jpg)</code></div>'
    +'<div>Explanation only: a last line like <code>(Radiopaedia, Dahnert)</code> shows as a Source line.</div>'
@@ -2349,9 +2372,9 @@ function edtOpen(which){
   if(typeof drawMode!=='undefined'&&drawMode&&typeof toggleDraw==='function')toggleDraw();
   edtEnsureSheet();
   edt.q=q;edt.db=db;edt.busy=false;
-  edt.orig={e:edtN(q.e),kp:edtN(q.kp)};
-  edt.val={e:edt.orig.e,kp:edt.orig.kp};
-  edt.which=which==='kp'?'kp':'e';
+  edt.orig={e:edtN(q.e),kp:edtN(q.kp),q:edtN(q.q)};
+  edt.val={e:edt.orig.e,kp:edt.orig.kp,q:edt.orig.q};
+  edt.which=which==='kp'?'kp':(which==='q'?'q':'e');
   edt.on=true;
   document.body.classList.add('edt');
   document.getElementById('edtWhere').textContent=db?'Saves to the database (question #'+q.id+')':'Built-in question: saves as an online edit';
@@ -2368,8 +2391,10 @@ function edtTab(w,init){
   if(ta)ta.value=edt.val[w];
   var bs=document.querySelectorAll('#edtSheet .edt-tabs button');
   for(var i=0;i<bs.length;i++)bs[i].classList.toggle('on',bs[i].getAttribute('data-w')===w);
-  var box=document.getElementById(w==='e'?'expBox':'kpBox');
-  if(box){box.classList.add('show');
+  var qg=document.getElementById('edtQg'),tl=document.getElementById('edtTools');
+  if(qg)qg.style.display=w==='q'?'block':'none';if(tl)tl.style.display=w==='q'?'none':'';
+  var box=w==='q'?document.getElementById('qText'):document.getElementById(w==='e'?'expBox':'kpBox');
+  if(box){if(w!=='q')box.classList.add('show');
     var hd=document.querySelector('#exam .hdr'),y=box.getBoundingClientRect().top+window.pageYOffset-(hd?hd.offsetHeight:0)-8;
     try{window.scrollTo({top:Math.max(0,y),behavior:'smooth'});}catch(e){window.scrollTo(0,Math.max(0,y));}}
   edtLive();
@@ -2382,6 +2407,7 @@ function edtInput(){
 }
 function edtLive(){ // show the text being typed in the real boxes above
   var e=document.getElementById('expTxt'),k=document.getElementById('kpTxt'),kb=document.getElementById('kpBox');
+  var qe=document.getElementById('qText');if(qe&&edt.on){try{qe.innerHTML=hlHTML(edt.val.q).html;}catch(x){}}
   if(e)e.innerHTML=formatTeach(edt.val.e);
   if(k)k.innerHTML=formatKP(edt.val.kp);
   if(kb)kb.className=(edtN(edt.val.kp)||edt.which==='kp')?'kp-box show':'kp-box';
@@ -2422,7 +2448,7 @@ function edtClose(){
 }
 function edtDirty(){
   var ta=document.getElementById('edtTa');if(ta)edt.val[edt.which]=ta.value;
-  return edtN(edt.val.e)!==edt.orig.e||edtN(edt.val.kp)!==edt.orig.kp;
+  return edtN(edt.val.e)!==edt.orig.e||edtN(edt.val.kp)!==edt.orig.kp||edtN(edt.val.q)!==edt.orig.q;
 }
 function edtExit(){
   if(edt.busy)return;
@@ -2438,39 +2464,52 @@ function edtSetEverywhere(q,fields){
 function edtSave(){
   if(edt.busy||!edt.on)return;
   if(!edtDirty()){edtClose();return;}
-  var q=edt.q,nv={e:edtN(edt.val.e),kp:edtN(edt.val.kp)},ch={};
+  var q=edt.q,nv={e:edtN(edt.val.e),kp:edtN(edt.val.kp),q:edtN(edt.val.q)},ch={};
+  var oldKey=qKey(q),needOk=!q.ok;
+  if(nv.q!==edt.orig.q)ch.q=nv.q;
   if(nv.e!==edt.orig.e)ch.e=nv.e;
   if(nv.kp!==edt.orig.kp)ch.kp=nv.kp;
   if(ch.e!==undefined&&!nv.e){edtMsg('The explanation cannot be empty.',true);return;}
+  if(ch.q!==undefined){
+    if(!nv.q){edtMsg('The question cannot be empty.',true);return;}
+    if((nv.q.match(/\[\[/g)||[]).length!==(nv.q.match(/\]\]/g)||[]).length){edtMsg('The highlight markers are unbalanced: every [[ needs a matching ]].',true);return;}
+    var nh=qHash(stripHLMarkers(nv.q).toLowerCase().replace(/\s+/g,' ').trim()),dup=false;
+    for(var di=0;di<SETS.length&&!dup;di++)if(Array.isArray(SETS[di]))SETS[di].forEach(function(x){if(x&&x!==q&&String(x.id)!==String(q.id)&&qKey(x)===nh)dup=true;});
+    if(dup&&!confirm('Another question already has this exact wording, so the quiz may treat them as duplicates. Save anyway?'))return;
+  }
   edt.busy=true;edtMsg('Saving...');
   var sv=document.getElementById('edtSave');if(sv)sv.disabled=true;
   function fail(err){
     edt.busy=false;if(sv)sv.disabled=false;
     var m=err&&err.message?err.message:'connection error';
-    if(err&&err.noTable)edtMsg('Not saved: the edits table is not set up yet. Run this once in the Supabase SQL Editor, then Save again:',true,EDT_SQL);
+    if(err&&err.noCol)edtMsg('Not saved: the database needs two new columns for question wording. Run this once in the Supabase SQL Editor, then Save again:',true,EDT_SQL_Q);
+    else if(err&&err.noTable)edtMsg('Not saved: the edits table is not set up yet. Run this once in the Supabase SQL Editor, then Save again:',true,EDT_SQL);
     else edtMsg('Not saved: '+m+'.',true);
   }
   function done(){
     var upd={};if(ch.e!==undefined)upd.e=ch.e;if(ch.kp!==undefined)upd.kp=ch.kp;
+    if(ch.q!==undefined){upd.q=ch.q;upd.ok=oldKey;upd._k=oldKey;}
     edtSetEverywhere(q,upd);
-    if(!edt.db){var k=qKey(q),o=EDIT_OV[k]||{e:null,kp:null};if(upd.e!==undefined)o.e=upd.e;if(upd.kp!==undefined)o.kp=upd.kp;EDIT_OV[k]=o;}
+    if(!edt.db){var k=oldKey,o=EDIT_OV[k]||{e:null,kp:null,q:null};if(upd.e!==undefined)o.e=upd.e;if(upd.kp!==undefined)o.kp=upd.kp;if(upd.q!==undefined)o.q=upd.q;EDIT_OV[k]=o;}
+    if(ch.q!==undefined){try{drawStore={};drawHist={};}catch(e){}}
     try{localStorage.removeItem('sba_q_cache');}catch(e){}
     edtClose();
     try{saveProgressDebounced();}catch(e){}
   }
   if(edt.db){
     var id=encodeURIComponent(q.id);
-    fetch(SUPABASE_URL+'/rest/v1/questions?select=explanation,key_point&id=eq.'+id,{headers:supaHeaders(),cache:'no-store'})
+    fetch(SUPABASE_URL+'/rest/v1/questions?select=explanation,key_point,question&id=eq.'+id,{headers:supaHeaders(),cache:'no-store'})
       .then(function(r){if(!r.ok)throw new Error('could not read the question (HTTP '+r.status+')');return r.json();})
       .then(function(rows){
         if(!rows||!rows.length)throw new Error('this question was not found online');
         var cur=rows[0],body={},clash=false;
         if(ch.e!==undefined){body.explanation=ch.e;if(edtN(cur.explanation)!==edt.orig.e)clash=true;}
         if(ch.kp!==undefined){body.key_point=ch.kp;if(edtN(cur.key_point)!==edt.orig.kp)clash=true;}
+        if(ch.q!==undefined){body.question=ch.q;if(edtN(cur.question)!==edt.orig.q)clash=true;if(needOk)body.orig_key=oldKey;}
         if(clash&&!confirm('This text was changed online since you opened it. Overwrite the online version with yours?'))throw new Error('cancelled, nothing was saved');
         return fetch(SUPABASE_URL+'/rest/v1/questions?id=eq.'+id,{method:'PATCH',headers:supaHeaders({'Prefer':'return=representation'}),body:JSON.stringify(body)});
       })
-      .then(function(r){if(!r.ok)throw new Error('the database refused the update (HTTP '+r.status+')');return r.json();})
+      .then(function(r){if(r.status===400&&ch.q!==undefined){var er=new Error('missing column');er.noCol=true;throw er;}if(!r.ok)throw new Error('the database refused the update (HTTP '+r.status+')');return r.json();})
       .then(function(d){
         if(!d||!d.length)throw new Error('the database blocked the update. In the Supabase SQL Editor run: create policy "allow update questions" on public.questions for update using (true) with check (true);');
         done();
@@ -2479,9 +2518,12 @@ function edtSave(){
     var row={qkey:qKey(q)};
     if(ch.e!==undefined)row.explanation=ch.e;
     if(ch.kp!==undefined)row.key_point=ch.kp;
+    if(ch.q!==undefined)row.question=ch.q;
+    row.qkey=oldKey;
     fetch(SUPABASE_URL+'/rest/v1/question_edits?on_conflict=qkey',{method:'POST',headers:supaHeaders({'Prefer':'resolution=merge-duplicates,return=representation'}),body:JSON.stringify(row)})
       .then(function(r){
         if(r.status===404){var er=new Error('table missing');er.noTable=true;throw er;}
+        if(r.status===400&&ch.q!==undefined){var er2=new Error('missing column');er2.noCol=true;throw er2;}
         if(!r.ok)throw new Error('the database refused the edit (HTTP '+r.status+')');
         return r.json();
       })
@@ -3345,13 +3387,16 @@ function refreshQsFromDb(){
   if(!supaReady())return;
   var ids=[];qs.forEach(function(q){if(q&&q.id&&/^\d+$/.test(String(q.id)))ids.push(q.id);});
   if(!ids.length)return;
-  fetch(SUPABASE_URL+'/rest/v1/questions?select=id,key_point,explanation,hint&id=in.('+ids.join(',')+')',{headers:supaHeaders(),cache:'no-store'})
+  fetch(SUPABASE_URL+'/rest/v1/questions?select=*&id=in.('+ids.join(',')+')',{headers:supaHeaders(),cache:'no-store'})
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(function(rows){
       var by={},changed=false;(rows||[]).forEach(function(x){by[String(x.id)]=x;});
       qs.forEach(function(q){
         var x=q&&by[String(q.id)];if(!x)return;
         var kp=String(x.key_point||'').replace(/\r/g,'').trim(),e=String(x.explanation||'').replace(/\r/g,'').trim(),h=String(x.hint||'').replace(/\r/g,'').trim();
+        if(x.orig_key){q.ok=x.orig_key;q._k=x.orig_key;}
+        var qq=String(x.question||'').replace(/\r/g,'').trim();
+        if(qq&&q.q!==qq){qKey(q);q.q=qq;changed=true;} // qKey first: the history key comes from the original wording
         if(q.kp!==kp||q.e!==e||q.hint!==h){q.kp=kp;q.e=e;q.hint=h;changed=true;}
       });
       if(changed&&document.getElementById('kpBox')&&typeof renderQ==='function')renderQ();
@@ -3451,6 +3496,72 @@ function toggleCross(L,btn){
   if(btn)btn.classList.toggle('out',i===-1);
 }
 var kbIdx=-1;
+/* ===== companion-screen sync (Supabase Realtime Broadcast) =====
+   The quiz publishes the current question; tablets open companion.html with the same pairing code.
+   Nothing is stored in the database. Before you answer only the question and options are sent. */
+var SYNC={sb:null,ch:null,last:null,code:'',on:false};
+function syncClean(c){return String(c||'').toLowerCase().replace(/[^a-z0-9_-]/g,'').slice(0,24);}
+function syncSetStatus(t,bad){
+  var e=document.getElementById('syncStatus');if(e){e.textContent=t;e.style.color=bad?'#e57373':'';}
+  var b=document.getElementById('syncBtn');if(b){b.textContent=SYNC.on?'Disconnect':'Connect';b.classList.toggle('on',SYNC.on);}
+}
+function syncSend(p){
+  SYNC.last=p;
+  if(SYNC.ch&&SYNC.on){try{SYNC.ch.send({type:'broadcast',event:'q',payload:p});}catch(e){}}
+}
+function syncStart(raw){
+  var code=syncClean(raw);
+  if(code.length<6){syncSetStatus('Use at least 6 letters or numbers for the code.',true);return;}
+  if(!window.supabase||!window.supabase.createClient){syncSetStatus('Sync library did not load. Check your connection and reload.',true);return;}
+  syncStop(true);
+  try{localStorage.setItem('sba_sync_code',code);localStorage.setItem('sba_sync_on','1');}catch(e){}
+  SYNC.code=code;SYNC.on=true;
+  var inp=document.getElementById('syncCodeInput');if(inp)inp.value=code;
+  syncSetStatus('Connecting...');
+  try{
+    if(!SYNC.sb)SYNC.sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+    var ch=SYNC.sb.channel('quiz-'+code);SYNC.ch=ch;
+    // a tablet that connects late (or wakes up) asks for the current question
+    ch.on('broadcast',{event:'hello'},function(){if(SYNC.ch===ch&&SYNC.last)syncSend(SYNC.last);})
+      .subscribe(function(st){
+        if(SYNC.ch!==ch)return;
+        if(st==='SUBSCRIBED'){
+          syncSetStatus('Connected. Open companion.html on your tablets with code: '+code);
+          var ex=document.getElementById('exam');
+          if(ex&&ex.classList.contains('active')&&typeof qs!=='undefined'&&qs&&qs.length)syncAfterRender();
+          else if(SYNC.last)syncSend(SYNC.last);
+        }else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')syncSetStatus('Sync problem, retrying...',true);
+        else if(st==='CLOSED')syncSetStatus('Disconnected.',true);
+      });
+  }catch(e){syncSetStatus('Could not start sync.',true);}
+}
+function syncStop(keep){
+  try{if(SYNC.ch&&SYNC.sb)SYNC.sb.removeChannel(SYNC.ch);}catch(e){}
+  SYNC.ch=null;SYNC.on=false;
+  if(!keep){try{localStorage.setItem('sba_sync_on','0');}catch(e){}syncSetStatus('Not connected.');}
+}
+function syncToggle(){
+  if(SYNC.on)syncStop();
+  else syncStart(document.getElementById('syncCodeInput').value);
+}
+function syncAfterRender(){
+  try{
+    var q=qs[cur];if(!q)return;
+    var a=ans[cur],isA=(a!==null&&a!==undefined);
+    var p={t:Date.now(),k:qKey(q),n:cur+1,tot:qs.length,s:q.s||'',q:stripHLMarkers(q.q),o:q.o,img:imgSrc(q.img),phase:isA?'answered':'asking',mode:mode};
+    if(isA){p.a=q.a;p.mine=a;p.e=String(q.e||'');p.kp=String(q.kp||'');p.topic=q.topic||'';p.ref=q.ref||'';}
+    syncSend(p);
+  }catch(e){}
+}
+function syncIdle(){try{syncSend({t:Date.now(),phase:'idle'});}catch(e){}}
+window.addEventListener('load',function(){
+  var c='',on=null,inp=document.getElementById('syncCodeInput');
+  try{c=localStorage.getItem('sba_sync_code')||'';on=localStorage.getItem('sba_sync_on');}catch(e){}
+  if(inp&&c)inp.value=c;
+  if(c&&on==='1')syncStart(c);else syncSetStatus('Not connected.');
+});
+/* ===== end companion-screen sync ===== */
+
 function renderQ(){
   stopTimer();
   kbIdx=-1;
@@ -3540,6 +3651,7 @@ function renderQ(){
   if(mode==='timed'&&!isA){timeLeft=30;startTimer();}
   saveProgressDebounced();
   if(typeof voiceAfterRender==='function')voiceAfterRender();
+  if(typeof syncAfterRender==='function')syncAfterRender();
 }
 
 function kbShow(){
@@ -3633,7 +3745,7 @@ function adjustTextSize(d){
   drawStore={};drawHist={}; // text reflows, so old marks would no longer line up
   if(typeof dRedraw==='function')dRedraw();
 }
-function copyQuestion(){
+function copyQuestion(toGemini){
   if(!qs||!qs.length)return;
   var q=qs[cur];
   var text='Question'+(q.s?' ('+q.s+')':'')+':\n'+stripHLMarkers(q.q)+'\n\n'+q.o.join('\n');
@@ -3646,13 +3758,14 @@ function copyQuestion(){
     else text+='\nMy answer: '+optText(mine)+(mine===q.a?' (correct)':' (wrong)');
     if(q.e&&String(q.e).trim())text+='\n\nTeaching point:\n'+String(q.e).trim();
   }
-  var btn=document.getElementById('copyQBtn');
+  var btn=document.getElementById('copyQBtn'),gw=null;
+  if(toGemini===true){try{gw=window.open(GEMINI_URL+'#sbaq='+encodeURIComponent(text),'_blank');}catch(e){}} // opened straight from the long press so the browser allows it
   function done(ok){
     if(!btn)return;
     btn.blur();
-    btn.textContent=ok?'Copied \u2713':'Copy failed - select the text manually';
+    btn.textContent=toGemini===true?(gw?(ok?'Sent to Gemini \u2713':'Opened Gemini (copy failed)'):'Copied. Allow pop-ups to open Gemini'):(ok?'Copied \u2713':'Copy failed - select the text manually');
     btn.classList.toggle('ok',ok);
-    setTimeout(function(){btn.textContent='Copy question & options';btn.classList.remove('ok');},1600);
+    setTimeout(function(){btn.textContent='Copy question & options';btn.classList.remove('ok');},toGemini===true?2600:1600);
   }
   function fallback(){
     var ta=document.createElement('textarea');
@@ -3668,6 +3781,20 @@ function copyQuestion(){
     navigator.clipboard.writeText(text).then(function(){done(true);},fallback);
   }else fallback();
 }
+var GEMINI_URL='https://gemini.google.com/app',copyHoldFired=false;
+function copyQuestionClick(){if(copyHoldFired){copyHoldFired=false;return;}copyQuestion();}
+// hold the button (~0.7 s): copy the question and open Gemini with it (the Tampermonkey script fills the chat box and sends it)
+(function(){
+  var tmr=0,sx=0,sy=0,btn=null;
+  function stop(){clearTimeout(tmr);tmr=0;if(btn)btn.classList.remove('holding');btn=null;}
+  document.addEventListener('pointerdown',function(e){
+    var b=e.target&&e.target.closest?e.target.closest('#copyQBtn'):null;if(!b)return;
+    stop();btn=b;sx=e.clientX;sy=e.clientY;copyHoldFired=false;b.classList.add('holding');
+    tmr=setTimeout(function(){tmr=0;copyHoldFired=true;b.classList.remove('holding');try{if(navigator.vibrate)navigator.vibrate(18);}catch(x){}copyQuestion(true);setTimeout(function(){copyHoldFired=false;},900);},700);
+  },true);
+  document.addEventListener('pointermove',function(e){if(tmr&&(Math.abs(e.clientX-sx)>10||Math.abs(e.clientY-sy)>10))stop();},true);
+  ['pointerup','pointercancel'].forEach(function(n){document.addEventListener(n,stop,true);});
+})();
 function toggleHint(){
   hintShown=!hintShown;
   document.getElementById('hintBox').className='hint-box'+(hintShown?' show':'');
@@ -4048,7 +4175,7 @@ function initDraw(){
   dCv.addEventListener('pointerup',end);
   dCv.addEventListener('pointercancel',end);
 }
-function goHome(){if(hlEd.on)hlEdClose();if(edt.on)edtClose();stopTimer();document.getElementById('timeup-ov').classList.remove('show');buildSetGrid();show('home');loadSavedProgressList();}
+function goHome(){try{syncIdle();}catch(e){}if(hlEd.on)hlEdClose();if(edt.on)edtClose();stopTimer();document.getElementById('timeup-ov').classList.remove('show');buildSetGrid();show('home');loadSavedProgressList();}
 buildSetGrid();
 initCountdown();
 initDraw();

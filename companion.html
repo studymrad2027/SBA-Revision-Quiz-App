@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1b2a">
+<title>SBA companion screen</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#0d1b2a;--panel:#162436;--panel2:#1e3048;--line:rgba(255,255,255,.12);--tx:#f0ebe0;--mut:#8ea3b8;--gold:#d4a843;--ok:#27ae60;--okt:#5fd68d;--bad:#e74c3c;--badt:#ff8f84;--fs:1;}
+body.light{--bg:#f5f0e8;--panel:#ffffff;--panel2:#e8e0d0;--line:rgba(0,0,0,.14);--tx:#1a2030;--mut:#556070;--gold:#9a7418;--okt:#1c7d43;--badt:#b3261e;}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:calc(17px*var(--fs))/1.55 'Source Sans 3','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;min-height:100vh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+#bar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+.brand{display:flex;align-items:center;gap:9px;font-size:.85rem;color:var(--mut);min-height:44px}
+.dot{width:11px;height:11px;border-radius:50%;background:var(--mut);flex:none}
+.dot.wait{background:var(--gold)}.dot.live{background:var(--ok)}.dot.bad{background:var(--bad)}
+.roles{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.roles button,.tools button{background:transparent;border:0;min-height:44px;padding:0 14px;font-size:.88rem}
+.roles button+button{border-left:1px solid var(--line)}
+.roles button[aria-pressed=true]{background:var(--gold);color:#0d1b2a;font-weight:700}
+.tools{display:flex;flex-wrap:wrap;gap:4px}
+.tools button{border:1px solid var(--line);border-radius:10px;color:var(--mut)}
+.tools button[aria-pressed=true]{color:var(--tx);border-color:var(--gold)}
+
+#setup{max-width:460px;margin:8vh auto 0;padding:0 20px}
+#setup h1{font-family:Georgia,'Times New Roman',serif;font-size:1.7rem;line-height:1.2;margin:0 0 8px}
+#setup p{color:var(--mut);margin:0 0 20px}
+#setup label{display:block;font-size:.85rem;color:var(--mut);margin-bottom:6px}
+#setup input{width:100%;min-height:50px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--tx);font:inherit;font-size:1.1rem}
+#go{margin-top:14px;width:100%;min-height:50px;border:0;border-radius:10px;background:var(--gold);color:#0d1b2a;font-weight:700}
+#err{color:var(--badt);min-height:1.4em;margin:10px 0 0;font-size:.9rem}
+
+main{display:grid;gap:16px;padding:16px;max-width:1240px;margin:0 auto}
+@media(min-width:860px){main{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);align-items:start}}
+#qcard,#panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.meta{font-size:.85rem;color:var(--mut);margin-bottom:8px}
+.stem{font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:1.22rem;line-height:1.5;margin:0 0 14px}
+.qimg{display:block;max-width:100%;max-height:340px;margin:0 0 14px;border-radius:8px;border:1px solid var(--line);cursor:zoom-in;background:#000}
+.opts{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.opt .L{flex:none;width:1.9em;height:1.9em;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);font-weight:700;font-size:.85em}
+.opt small{display:block;font-size:.78rem;margin-top:2px;color:var(--mut)}
+.opt.ok{border-color:var(--ok);background:rgba(39,174,96,.14)}.opt.ok small{color:var(--okt);font-weight:700}
+.opt.bad{border-color:var(--bad);background:rgba(231,76,60,.13)}.opt.bad small{color:var(--badt);font-weight:700}
+.note{color:var(--mut);font-size:.9rem;margin:12px 0 0}
+
+#panel h3,#panel h4,#panel h5{font-family:Georgia,'Times New Roman',serif;margin:18px 0 6px;line-height:1.3}
+#panel h3{font-size:1.1rem}#panel h4{font-size:1.02rem}#panel h5{font-size:.95rem}
+#panel>section:first-child h3{margin-top:0}
+#panel p{margin:0 0 10px}
+#panel ul{margin:0 0 10px;padding-left:1.3em}
+#panel li{margin:3px 0}
+#panel blockquote{margin:0 0 10px;padding:2px 0 2px 12px;border-left:3px solid var(--gold);color:var(--mut)}
+.tw{overflow-x:auto;margin:0 0 12px}
+table{border-collapse:collapse;font-size:.92em;min-width:100%}
+th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+th{background:var(--panel2)}
+.result{display:inline-block;font-weight:700;padding:5px 12px;border-radius:999px;margin:0 0 14px;font-size:.92rem;border:1px solid var(--line)}
+.result.ok{color:var(--okt);border-color:var(--ok)}.result.bad{color:var(--badt);border-color:var(--bad)}
+.kp{border-left:4px solid var(--gold);padding:2px 0 2px 14px;margin:0 0 6px}
+.kp h3{color:var(--gold)}
+.empty h2,.empty h3{font-family:Georgia,'Times New Roman',serif;font-size:1.2rem;margin:0 0 6px}
+.empty p{color:var(--mut);margin:0}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}
+.btn{min-height:46px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);text-decoration:none;display:inline-flex;align-items:center;font-size:.92rem}
+.btn.main{background:var(--gold);color:#0d1b2a;font-weight:700;border-color:var(--gold)}
+.aibox{border:1px dashed var(--line);border-radius:10px;padding:12px 14px;color:var(--mut);font-size:.92rem;margin:0 0 14px}
+details{margin-top:6px}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--mut)}
+
+#zoom{position:fixed;inset:0;background:rgba(0,0,0,.92);display:grid;place-items:center;z-index:20;cursor:zoom-out}
+#zoom img{max-width:96vw;max-height:94vh}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+@media(prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<header id="bar">
+  <div class="brand"><span id="dot" class="dot"></span><span id="stat">Not connected</span></div>
+  <nav class="roles" aria-label="What this screen shows">
+    <button type="button" data-r="ref" aria-pressed="true">Reference</button>
+    <button type="button" data-r="ai" aria-pressed="false">AI notes</button>
+    <button type="button" data-r="mirror" aria-pressed="false">Mirror</button>
+  </nav>
+  <div class="tools">
+    <button type="button" id="bMinus" aria-label="Smaller text">A&minus;</button>
+    <button type="button" id="bPlus" aria-label="Larger text">A+</button>
+    <button type="button" id="bTheme" aria-pressed="false">Light</button>
+    <button type="button" id="bAwake" aria-pressed="false">Stay awake</button>
+    <button type="button" id="bSync" aria-label="Ask the quiz to send the current question again">Refresh</button>
+    <button type="button" id="bCode">Code</button>
+  </div>
+</header>
+
+<section id="setup" hidden>
+  <h1>Pair with your quiz</h1>
+  <p>Type the same pairing code you entered on the quiz home screen.</p>
+  <label for="code">Pairing code</label>
+  <input id="code" type="text" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="at least 6 letters or numbers">
+  <button type="button" id="go">Connect</button>
+  <p id="err" role="alert"></p>
+</section>
+
+<main id="main" hidden>
+  <article id="qcard"></article>
+  <aside id="panel" aria-live="polite"></aside>
+</main>
+
+<div id="zoom" hidden><img alt="Question image, enlarged"></div>
+<div id="toast" role="status"></div>
+
+<script>
+(function(){
+var SUPABASE_URL='https://hdbbewazxtvpcjrtdtqq.supabase.co',SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkYmJld2F6eHR2cGNqcnRkdHFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4MDYyNTcsImV4cCI6MjEwNjM4MjI1N30.f2FNEwyddGknkzWYoJxmgsH8dqCcR0kLEs6jfAB2VkY';
+var $=function(id){return document.getElementById(id);};
+var S={code:'',role:'ref',sb:null,ch:null,d:null,lastT:0,fs:1,awake:false,wl:null};
+
+function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){}return null;}
+function esc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* ---- same mini-markdown the quiz uses: # ## ### > bullets tables **bold** *italic* __underline__ ---- */
+function inl(x){return esc(x).replace(/&lt;br\s*\/?&gt;/gi,'<br>').replace(/__([^_\n]+?)__/g,'<u>$1</u>').replace(/\*\*([^*\n]+?)\*\*/g,'<strong>$1</strong>').replace(/(^|[^\w*])\*([^\s*][^*\n]*?)\*(?![\w*])/g,'$1<em>$2</em>');}
+function isRow(l){return /^\s*\|.*\|\s*$/.test(l||'');}
+function isSep(l){return isRow(l)&&/^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/.test(l)&&l.indexOf('-')>-1;}
+function cells(r){return r.trim().replace(/^\||\|$/g,'').split('|').map(function(c){return c.trim();});}
+function fmt(text){
+  var L=String(text||'').replace(/\r/g,'').replace(/\t/g,'  ').split('\n'),out='',stack=[],i=0,m;
+  function close(){while(stack.length){out+='</li></ul>';stack.pop();}}
+  while(i<L.length){
+    var l=L[i];
+    if(!l.trim()){close();i++;continue;}
+    if(isRow(l)&&isSep(L[i+1])){
+      close();var rows=[],j=i;
+      while(j<L.length&&isRow(L[j])){rows.push(L[j]);j++;}
+      out+='<div class="tw"><table><thead><tr>'+cells(rows[0]).map(function(c){return '<th>'+inl(c)+'</th>';}).join('')+'</tr></thead><tbody>';
+      for(var r=2;r<rows.length;r++)out+='<tr>'+cells(rows[r]).map(function(c){return '<td>'+inl(c)+'</td>';}).join('')+'</tr>';
+      out+='</tbody></table></div>';i=j;continue;
+    }
+    if((m=l.match(/^(#{1,3})\s+(.*)$/))){close();var h=m[1].length+2;out+='<h'+h+'>'+inl(m[2])+'</h'+h+'>';i++;continue;}
+    if((m=l.match(/^\s*>\s?(.*)$/))){close();out+='<blockquote>'+inl(m[1])+'</blockquote>';i++;continue;}
+    if((m=l.match(/^(\s*)[-*]\s+(.*)$/))){
+      var d=Math.floor(m[1].length/2)+1;
+      while(stack.length>d){out+='</li></ul>';stack.pop();}
+      if(stack.length===d)out+='</li><li>';
+      else while(stack.length<d){out+='<ul><li>';stack.push(1);}
+      out+=inl(m[2]);i++;continue;
+    }
+    close();out+='<p>'+inl(l)+'</p>';i++;
+  }
+  close();return out;
+}
+
+/* ---- ui helpers ---- */
+function toast(t){var e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove('show');},1800);}
+function setStatus(kind,text){$('dot').className='dot '+kind;$('stat').textContent=text;}
+function showSetup(on,msg){$('setup').hidden=!on;$('main').hidden=on;$('err').textContent=msg||'';if(on){$('code').value=S.code||store('sba_comp_code')||'';}}
+function clock(){var n=new Date();return n.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function optText(d,L){for(var i=0;i<d.o.length;i++)if(d.o[i].charAt(0)===L)return d.o[i];return L;}
+function plainOpt(d,L){var o=optText(d,L);return o.length>3?o.slice(3):o;}
+
+/* ---- the prompt used by the "ask Gemini" buttons ---- */
+function buildPrompt(d){
+  var t='I am revising for a radiology (MRAD) single-best-answer exam. Make short study notes for this question.\n\nQuestion'+(d.s?' ('+d.s+')':'')+':\n'+d.q+'\n\n'+d.o.join('\n')+'\n\nCorrect answer: '+optText(d,d.a);
+  if(d.mine==='SKIP')t+='\nMy answer: skipped';
+  else if(d.mine==='TIMEUP')t+='\nMy answer: timed out';
+  else t+='\nMy answer: '+optText(d,d.mine)+(d.mine===d.a?' (correct)':' (wrong)');
+  t+='\n\nGive me, in brief bullets: 1) why the correct answer is right, 2) why each other option is wrong, 3) one high-yield imaging pearl, 4) a short memory trick.';
+  return t;
+}
+function copyText(text,done){
+  function fb(){var ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;opacity:0';document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(e){}document.body.removeChild(ta);done(ok);}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(function(){done(true);},fb);else fb();
+}
+
+/* ---- rendering ---- */
+function resultBanner(d){
+  if(d.mine==='SKIP')return '<p class="result">Skipped</p>';
+  if(d.mine==='TIMEUP')return '<p class="result bad">Time ran out</p>';
+  return d.mine===d.a?'<p class="result ok">Correct</p>':'<p class="result bad">Not quite</p>';
+}
+function lookupLinks(d){
+  var term=plainOpt(d,d.a);
+  return '<div class="actions"><a class="btn" target="_blank" rel="noopener" href="https://radiopaedia.org/search?q='+encodeURIComponent(term)+'">Radiopaedia: '+esc(term)+'</a>'
+    +'<a class="btn" target="_blank" rel="noopener" href="https://en.wikipedia.org/w/index.php?search='+encodeURIComponent(term)+'">Wikipedia</a></div>';
+}
+function teachingHTML(d){
+  var h='';
+  if(d.kp&&d.kp.trim())h+='<section class="kp"><h3>Key point</h3>'+fmt(d.kp)+'</section>';
+  if(d.e&&d.e.trim())h+='<section><h3>Teaching point</h3>'+fmt(d.e)+'</section>';
+  if(d.ref&&String(d.ref).trim())h+='<section><h3>Reference</h3><p>'+esc(d.ref)+'</p></section>';
+  if(!h)h='<p class="note">This question has no teaching point saved yet.</p>';
+  return h;
+}
+function render(){
+  var d=S.d,qc=$('qcard'),pn=$('panel');
+  if(!d||d.phase==='idle'||!d.q){
+    qc.innerHTML='<div class="empty"><h2>Waiting for a question</h2><p>Open a set on the quiz. Each new question appears here by itself.</p></div>';
+    pn.innerHTML='';pn.hidden=true;return;
+  }
+  pn.hidden=false;
+  var done=d.phase==='answered';
+  var h='<div class="meta">Question '+esc(d.n)+' of '+esc(d.tot)+(d.s?' &ndash; '+esc(d.s):'')+'</div>';
+  h+='<h2 class="stem">'+esc(d.q)+'</h2>';
+  if(d.img)h+='<img class="qimg" src="'+esc(d.img)+'" alt="Question image" data-zoom="1">';
+  h+='<ol class="opts">'+d.o.map(function(o){
+    var L=o.charAt(0),t=o.slice(3),c='',tag='';
+    if(done){
+      if(L===d.a){c='ok';tag=(L===d.mine)?'Correct, and your answer':'Correct answer';}
+      else if(L===d.mine){c='bad';tag='Your answer';}
+    }
+    return '<li class="opt '+c+'"><span class="L">'+esc(L)+'</span><span class="t">'+esc(t)+(tag?'<small>'+tag+'</small>':'')+'</span></li>';
+  }).join('')+'</ol>';
+  qc.innerHTML=h;
+
+  var p='';
+  if(!done){
+    p='<div class="empty"><h3>Notes appear after you answer</h3><p>'+(d.s?esc(d.s)+'. ':'')+'Nothing is shown early, so the answer is not spoiled.</p></div>';
+  }else if(S.role==='ai'){
+    p=resultBanner(d)
+     +'<div class="actions"><button type="button" class="btn main" data-act="copy">Copy prompt</button><button type="button" class="btn" data-act="gemini">Copy and open Gemini</button></div>'
+     +'<div class="aibox">Automatic AI notes are not connected yet. Use the buttons to ask Gemini in the meantime.</div>'
+     +'<details><summary>Teaching point from the quiz</summary>'+teachingHTML(d)+'</details>';
+  }else{
+    p=resultBanner(d)+teachingHTML(d)+lookupLinks(d);
+  }
+  pn.innerHTML=p;
+}
+
+/* ---- connection ---- */
+function onData(p){
+  if(!p)return;
+  if(p.t&&p.t<S.lastT)return;
+  S.lastT=p.t||Date.now();S.d=p;
+  setStatus('live',p.phase==='idle'?'Connected, waiting for a question':'Receiving, updated '+clock());
+  render();
+}
+function hello(){if(S.ch){try{S.ch.send({type:'broadcast',event:'hello',payload:{}});}catch(e){}}}
+function disconnect(){try{if(S.ch&&S.sb)S.sb.removeChannel(S.ch);}catch(e){}S.ch=null;}
+function connect(raw){
+  var code=String(raw||'').toLowerCase().replace(/[^a-z0-9_-]/g,'').slice(0,24);
+  if(code.length<6){showSetup(true,'Use at least 6 letters or numbers, the same as on the quiz.');return;}
+  if(!window.supabase||!window.supabase.createClient){showSetup(true,'The sync library did not load. Check the internet connection and reload this page.');return;}
+  disconnect();
+  S.code=code;S.d=null;S.lastT=0;store('sba_comp_code',code);
+  showSetup(false);render();
+  setStatus('wait','Connecting...');
+  try{
+    if(!S.sb)S.sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+    var ch=S.sb.channel('quiz-'+code);S.ch=ch;
+    ch.on('broadcast',{event:'q'},function(m){if(S.ch===ch)onData(m.payload);})
+      .subscribe(function(st){
+        if(S.ch!==ch)return;
+        if(st==='SUBSCRIBED'){setStatus(S.d?'live':'wait','Connected, code '+code);hello();}
+        else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')setStatus('bad','Connection problem, retrying...');
+        else if(st==='CLOSED')setStatus('bad','Disconnected');
+      });
+  }catch(e){setStatus('bad','Could not connect');}
+}
+
+/* ---- controls ---- */
+function setRole(r){
+  if(r!=='ref'&&r!=='ai'&&r!=='mirror')r='ref';
+  S.role=r;store('sba_comp_role',r);
+  Array.prototype.forEach.call(document.querySelectorAll('.roles button'),function(b){b.setAttribute('aria-pressed',b.getAttribute('data-r')===r?'true':'false');});
+  render();
+}
+function setFs(v){S.fs=Math.max(.85,Math.min(1.7,v));document.documentElement.style.setProperty('--fs',S.fs);store('sba_comp_fs',String(S.fs));}
+function setTheme(light){document.body.classList.toggle('light',light);$('bTheme').textContent=light?'Dark':'Light';$('bTheme').setAttribute('aria-pressed',light?'true':'false');var m=document.querySelector('meta[name=theme-color]');if(m)m.content=light?'#f5f0e8':'#0d1b2a';store('sba_comp_theme',light?'light':'dark');}
+function wakeOn(){
+  if(!navigator.wakeLock){toast('This browser cannot keep the screen awake');return;}
+  navigator.wakeLock.request('screen').then(function(l){S.wl=l;S.awake=true;l.addEventListener('release',function(){S.wl=null;});$('bAwake').setAttribute('aria-pressed','true');toast('Screen will stay awake');},function(){toast('Could not keep the screen awake');});
+}
+function wakeOff(){S.awake=false;if(S.wl){try{S.wl.release();}catch(e){}S.wl=null;}$('bAwake').setAttribute('aria-pressed','false');}
+
+document.querySelector('.roles').addEventListener('click',function(e){var b=e.target.closest('button');if(b)setRole(b.getAttribute('data-r'));});
+$('bMinus').onclick=function(){setFs(S.fs-.1);};
+$('bPlus').onclick=function(){setFs(S.fs+.1);};
+$('bTheme').onclick=function(){setTheme(!document.body.classList.contains('light'));};
+$('bAwake').onclick=function(){if(S.awake)wakeOff();else wakeOn();};
+$('bSync').onclick=function(){hello();toast('Asked the quiz to resend');};
+$('bCode').onclick=function(){showSetup(true);};
+$('go').onclick=function(){connect($('code').value);};
+$('code').addEventListener('keydown',function(e){if(e.key==='Enter')connect($('code').value);});
+$('panel').addEventListener('click',function(e){
+  var b=e.target.closest('[data-act]');if(!b||!S.d)return;
+  var act=b.getAttribute('data-act'),text=buildPrompt(S.d);
+  var w=null;
+  if(act==='gemini'){try{w=window.open('https://gemini.google.com/app','_blank');}catch(x){}}
+  copyText(text,function(ok){toast(ok?(act==='gemini'?(w?'Prompt copied. Paste it into Gemini':'Prompt copied. Allow pop-ups to open Gemini'):'Prompt copied'):'Copy failed');});
+});
+$('qcard').addEventListener('click',function(e){var im=e.target.closest('[data-zoom]');if(im){$('zoom').querySelector('img').src=im.src;$('zoom').hidden=false;}});
+$('zoom').onclick=function(){this.hidden=true;};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')$('zoom').hidden=true;});
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState!=='visible')return;
+  if(S.awake&&!S.wl)wakeOn();
+  if(S.ch)hello();
+});
+
+/* ---- start ---- */
+(function init(){
+  var qp=new URLSearchParams(location.search);
+  var fs=parseFloat(store('sba_comp_fs'));if(fs>0)setFs(fs);
+  setTheme(store('sba_comp_theme')==='light');
+  setRole(qp.get('role')||store('sba_comp_role')||'ref');
+  var code=qp.get('code')||store('sba_comp_code')||'';
+  if(code)connect(code);else showSetup(true);
+})();
+})();
+</script>
+</body>
+</html>
