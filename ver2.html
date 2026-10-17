@@ -1,4 +1,11 @@
 <!DOCTYPE html>
+<!--
+  Backbencher Fast SBA Revision (Dr Ram) - quiz app, single standalone file (GitHub Pages + Supabase).
+  Full project notes: PROJECT_NOTES.md (read it first). Companion tablet page: companion.html.
+  Quick map (search by name): renderQ, pick, nextQ/prevQ/skipQ, qKey, SETS (500 built-in questions),
+  snapTargets/snapSkipsTeaching (scroll snapping), "companion-screen sync" block (syncStart, syncAfterRender,
+  syncRemoteAnswer, syncRemoteNav). Keep it standalone: no build step, no secret keys, small targeted edits.
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -483,6 +490,48 @@ body.voice-open #exam{padding-bottom:160px;}
 *{touch-action:manipulation;}
 #drawCv{touch-action:none;}
 html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+
+/* ===== exam paper (PDF) ===== */
+#paperOv{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:250;align-items:center;justify-content:center;padding:16px;}
+#paperOv.show{display:flex;}
+.btn-paper{background:linear-gradient(135deg,#6a4cc2,#43308a);border:none;border-radius:10px;padding:11px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;width:100%;max-width:300px;margin-bottom:10px;}
+.pp-lbl{display:block;font-size:10px;color:var(--grey);text-transform:uppercase;letter-spacing:1px;font-family:sans-serif;margin:10px 0 4px;}
+.pp-sel{width:100%;box-sizing:border-box;background:var(--bg2);border:1px solid rgba(128,128,128,.3);border-radius:8px;padding:9px 10px;color:var(--tx);font-size:13px;font-family:sans-serif;}
+.pp-st{font-size:12px;color:var(--tx);font-family:sans-serif;line-height:1.5;margin:6px 0;}
+.pp-btns{display:flex;flex-direction:column;gap:7px;margin-top:6px;}
+.pp-btns button{background:var(--bg2);border:1px solid rgba(212,168,67,.45);color:var(--gold);border-radius:9px;padding:10px;font-size:13px;font-weight:700;}
+.pp-btns button.main{background:linear-gradient(135deg,#d4a843,#b8901e);border:none;color:#0d1b2a;}
+#paperPrint{display:none;}
+@media print{
+  @page{size:A4;margin:12mm;}
+  body.pp{background:#fff!important;}
+  body.pp>*{display:none!important;}
+  body.pp>#paperPrint{display:block!important;background:#fff;color:#111;font-family:Georgia,'Times New Roman',serif;}
+  #paperPrint .pp-head h1{font-size:15pt;text-align:center;margin:0 0 2pt;letter-spacing:.5px;}
+  #paperPrint .pp-sub{text-align:center;font:9.5pt system-ui,sans-serif;margin-bottom:8pt;}
+  #paperPrint .pp-info{width:100%;border-collapse:collapse;font:9.5pt system-ui,sans-serif;margin-bottom:8pt;}
+  #paperPrint .pp-info td{border:1px solid #222;padding:4pt 6pt;}
+  #paperPrint .pp-rule{border:1px solid #222;padding:5pt 8pt;font:9pt/1.4 system-ui,sans-serif;margin-bottom:10pt;}
+  #paperPrint .pp-q{border-top:1px solid #bbb;padding:8pt 0 14pt;break-inside:avoid;}
+  #paperPrint .pp-meta{display:flex;justify-content:space-between;font:7.5pt system-ui,sans-serif;color:#777;margin-bottom:3pt;}
+  #paperPrint .pp-stem{font-size:11pt;line-height:1.45;white-space:pre-line;}
+  #paperPrint .pp-img{display:block;max-width:100%;max-height:7cm;margin:6pt 0;}
+  #paperPrint .pp-opts{list-style:none;padding:0;margin:6pt 0 0;font-size:10.5pt;line-height:1.4;}
+  #paperPrint .pp-opts li{display:flex;gap:6pt;margin:3pt 0;}
+  #paperPrint .pp-opts i{font-style:normal;font-weight:700;min-width:12pt;}
+  #paperPrint .pp-pb{break-after:page;}
+  #paperPrint .pp-grid{width:100%;border-collapse:collapse;font:9pt system-ui,sans-serif;text-align:center;}
+  #paperPrint .pp-grid thead{display:table-header-group;}
+  #paperPrint .pp-grid tr{break-inside:avoid;}
+  #paperPrint .pp-grid th,#paperPrint .pp-grid td{border:1px solid #222;padding:2pt;}
+  #paperPrint .pp-grid th{background:#eee;font-size:8pt;}
+  #paperPrint .pp-grid td.n{font-weight:700;width:9mm;}
+  #paperPrint .pp-grid td.big{width:15mm;height:8mm;}
+  #paperPrint .pp-grid .pm{background:#f6f6f6;}
+  #paperPrint .pp-grid tr.clock td{background:#eee;text-align:left;padding:3pt 6pt;font-size:8.5pt;}
+  #paperPrint .bx{display:inline-block;width:10pt;height:10pt;border:1.2px solid #222;vertical-align:middle;}
+  #paperPrint .pp-leg{font:8.5pt/1.5 system-ui,sans-serif;margin-top:6pt;}
+}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -498,6 +547,24 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
 </div>
 
 <div id="groupOv" onclick="if(event.target===this)closeGroup()"><div class="go-box"><div class="go-title" id="goTitle"></div><div class="go-grid" id="goGrid"></div><button class="go-close" onclick="closeGroup()">Close</button></div></div>
+
+<div id="paperOv" onclick="if(event.target===this)closePaper()"><div class="go-box" style="text-align:left">
+  <div class="go-title" style="text-align:center">&#128221; Exam Paper (PDF)</div>
+  <label class="pp-lbl" for="ppPaper">Paper</label>
+  <select id="ppPaper" class="pp-sel"><option value="1">Paper 1 &ndash; Cardiothoracic/CVS 50, MSK 45, Breast &amp; women's 5</option><option value="2">Paper 2 &ndash; CNS 40, Head &amp; Neck 10, GIT 35, GU 15</option></select>
+  <label class="pp-lbl" for="ppLen">Length</label>
+  <select id="ppLen" class="pp-sel"><option value="40">40 questions &ndash; 1 hour</option><option value="60">60 questions &ndash; 1 hour 30 minutes</option><option value="100">100 questions &ndash; 2 hours 30 minutes</option></select>
+  <button class="btn-timed" id="ppGo" style="width:100%;margin:12px 0 8px" onclick="ppGenerate()">Generate paper</button>
+  <div class="pp-st" id="ppSt"></div>
+  <div id="ppReady" style="display:none"><div class="pp-btns">
+    <button class="main" onclick="ppPrint()">&#128424; Print / Save as PDF</button>
+    <button onclick="ppDownloadKey()">&#11015; Download answer key (CSV)</button>
+    <button onclick="ppCopyPrompt()">&#128203; Copy Gemini prompt</button>
+  </div></div>
+  <div class="pp-st" id="ppMsg" style="color:var(--gold)"></div>
+  <div style="text-align:center;margin-top:8px"><button class="go-close" onclick="closePaper()">Close</button></div>
+</div></div>
+<div id="paperPrint"></div>
 
 <div id="hcov">
   <div class="hc-box">
@@ -563,6 +630,7 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
     <button class="btn-full" onclick="startExam('normal',-1)">&#9654; Full Exam &mdash; Mixed 100 Questions</button>
     <button class="btn-wrong" id="wrongBtn" onclick="startExam('wrong',-1)">&#8629; Redo Wrong Answers</button>
     <button class="btn-board" onclick="openLeaderboard()">&#127942; Leaderboard</button>
+    <button class="btn-paper" onclick="openPaperDlg()">&#128221; Exam Paper (PDF)</button>
     <div class="import-row locked" id="importRow">
       <button class="btn-import" onclick="document.getElementById('excelInput').click()">&#128228; Import Excel Questions</button>
       <button class="btn-template" onclick="downloadTemplate()">&#11015; Download Excel Template</button>
@@ -799,7 +867,7 @@ function supaRowToExcelRow(r){
     'Set':r.set_name||'1','System':r.system,'Question':r.question,
     'Option A':r.option_a,'Option B':r.option_b,'Option C':r.option_c,'Option D':r.option_d,'Option E':r.option_e,
     'Correct Answer':r.correct_answer,'Explanation':r.explanation,'Reference':r.reference,'Image Path/URL':r.image_url,
-    'Difficulty':r.difficulty,'Topic':r.topic,'Key Point':r.key_point,'Hint':r.hint,'Book':r.book||'','ID':r.id==null?'':r.id,'OrigKey':r.orig_key||''
+    'Difficulty':r.difficulty,'Topic':r.topic,'Key Point':r.key_point,'Hint':r.hint,'Book':r.book||'','Exam Topic':r.exam_topic||'','ID':r.id==null?'':r.id,'OrigKey':r.orig_key||''
   };
 }
 // =====================================================================================
@@ -1164,6 +1232,7 @@ function convertExcelRows(rows){
       id:g('ID'),
       ok:g('OrigKey'),
       book:normBook(g('Book')),
+      et:g('Exam Topic'),
       set:g('Set')||'1'
     });
   });
@@ -4210,6 +4279,161 @@ function initDraw(){
   dCv.addEventListener('pointercancel',end);
 }
 function goHome(){try{syncIdle();}catch(e){}if(hlEd.on)hlEdClose();if(edt.on)edtClose();stopTimer();document.getElementById('timeup-ov').classList.remove('show');buildSetGrid();show('home');loadSavedProgressList();}
+/* ===== exam paper (PDF) generator: blueprint-based random paper, answer grid, separate key file ===== */
+var PP_PAPERS={1:{cardio:50,msk:45,breast:5},2:{cns:40,hn:10,git:35,gu:15}};
+var PP_TL={cardio:'Cardiothoracic/CVS',msk:'MSK',breast:"Breast & women's reproductive",cns:'CNS',hn:'Head & Neck',git:'GIT',gu:'GU & male reproductive'};
+var PP_LEN={40:'1 hour',60:'1 hour 30 minutes',100:'2 hours 30 minutes'};
+var PP_RX={
+ hn:/\b(thyroid|parathyroid|salivary|parotid|submandibular|laryn\w*|pharyn\w*|sinonasal|paranasal|pansinusitis|sinusitis|orbit\w*|mandib\w*|cholesteatoma|tonsil\w*|neck mass)\b/i,
+ fem:/\b(ovar\w*|uter\w*|myometri\w*|endometri\w*|cervix|vagin\w*|placent\w*|pregnan\w*|gestation\w*|adnex\w*|fallopian|PCOS|FIGO|trophoblast\w*|hydatidiform|fibroids?|leiomyoma|tamoxifen|O-RADS|menopausal|breast)\b/i,
+ cns:/\b(brain|cerebr\w*|intracranial|spinal|spine|cord|myelomening\w*|ventric\w*|germinal|leukodystroph\w*|posterior fossa|craniopharyng\w*|germinoma|hydroceph\w*|periventricular|seizures?|carotid|vertebral artery|thallium|sestamibi)\b/i,
+ msk:/\b(bone|bones|skeletal|fractures?|osteo\w*|femur|femoral head|hip|hips|knee|joint|SCFE|Perthes|Legg\w*|rickets|Graf|AVN|CPPD|chondrocalcinosis|prosthetic|discograph\w*|NaF|scoliosis|fibrous dysplasia|McCune\w*)\b/i,
+ gu:/\b(renal|kidneys?|adrenal|prostat\w*|PSMA|MAG-?3|DMSA|testic\w*|testis|bladder|ureter\w*|angiomyolipoma|AML|Wilms|neuroblastoma|nephr\w*|urinary)\b/i,
+ git:/\b(liver|hepat\w*|bili\w*|bile|cholang\w*|HCC|TACE|SIRT|Y-90|TIPS|variceal|portal|colorectal|pancrea\w*|gallbladder|HIDA|Meckel|bowel|carcinoid|DOTATATE|neuroendocrine|appendi\w*|mesenteric|intussusception|pylor\w*|duoden\w*|jejun\w*|Hirschsprung|meconium|abdominal|AXR|gastr\w*|choledoch\w*|splen\w*)\b/i,
+ cardio:/\b(aort\w*|\w*aneurysm\w*|EVAR|TEVAR|endoleak|dissection|pulmon\w*|lung|PAVM|HHT|V\/Q|venogra\w*|iliac|subclavian|cardiac|heart|Fallot|TAPVR|truncus|HLHS|thrombolysis|IVC|arter\w*|vascular|CXR|RDS|CPAM|CCAM|sequestration|diaphragmatic|mediastin\w*|sarcoid\w*|DiGeorge|thorac\w*)\b/i
+};
+var PP=null;
+function ppOverride(v){
+  v=String(v||'').toLowerCase().trim();if(!v)return null;
+  if(/women|female|gyn|breast|obstet/.test(v))return 'breast';
+  if(/head|neck|^ent$|thyroid/.test(v))return 'hn';
+  if(/cardio|thorac|chest|cvs|vascular|lung/.test(v))return 'cardio';
+  if(/msk|musculo|bone|ortho/.test(v))return 'msk';
+  if(/cns|neuro|brain|spine/.test(v))return 'cns';
+  if(/^gi(t)?$|gastro|hepat|bowel/.test(v))return 'git';
+  if(/^gu$|urolog|renal|male|genito/.test(v))return 'gu';
+  return null;
+}
+function ppChain(t){
+  var o=['cns','msk','fem','gu','git','cardio'];
+  for(var i=0;i<o.length;i++)if(PP_RX[o[i]].test(t))return o[i]==='fem'?'breast':o[i];
+  return null;
+}
+// blueprint topic of a question: optional "Exam Topic" column first, then the system tag, then keywords in the stem (and explanation as a fallback)
+function ppTopic(q){
+  var ov=ppOverride(q.et);if(ov)return ov;
+  var s=String(q.s||'').toLowerCase().trim(),a=stripHLMarkers(q.q),b=a+' '+(q.e||'');
+  if(s==='chest')return 'cardio';
+  if(s==='msk')return 'msk';
+  if(s==='breast')return 'breast';
+  if(s!=='gu'&&PP_RX.hn.test(a))return 'hn';
+  if(s==='neuro')return 'cns';
+  if(s==='gi')return 'git';
+  if(s==='gu')return PP_RX.fem.test(a)?'breast':'gu';
+  return ppOverride(s)||ppChain(a)||ppChain(b);
+}
+function ppBuild(paper,n){
+  var seen={},groups={},quota=PP_PAPERS[paper],topics=Object.keys(quota),picked=[],base={},want={},short=0,filled=0;
+  for(var i=0;i<SETS.length;i++){
+    if(!Array.isArray(SETS[i]))continue;
+    SETS[i].forEach(function(q){
+      var k=qKey(q);if(seen[k])return;seen[k]=1;
+      var t=ppTopic(q);if(t)(groups[t]=groups[t]||[]).push(q);
+    });
+  }
+  topics.forEach(function(t){
+    var g=groups[t]=shuffleRandom(groups[t]||[]);
+    want[t]=Math.round(quota[t]*n/100);
+    var take=g.splice(0,want[t]);
+    base[t]=take.length;short+=want[t]-take.length;
+    take.forEach(function(q){picked.push({q:q,t:t});});
+  });
+  var got={};topics.forEach(function(t){got[t]=base[t];});
+  while(short>0){ // a topic ran out: fill from the topic of this paper with the most spare questions
+    var best=null;
+    topics.forEach(function(t){if(groups[t].length&&(!best||groups[t].length>groups[best].length))best=t;});
+    if(!best)break;
+    picked.push({q:groups[best].shift(),t:best});got[best]++;short--;filled++;
+  }
+  var d=new Date(),p2=function(x){return (x<10?'0':'')+x;};
+  return {paper:paper,n:n,items:shuffleRandom(picked),topics:topics,want:want,base:base,got:got,short:short,filled:filled,
+    id:'P'+paper+'-'+n+'-'+p2(d.getMonth()+1)+p2(d.getDate())+'-'+Math.random().toString(36).slice(2,4).toUpperCase()};
+}
+function ppHTML(P){
+  var BX='<td><span class="bx"></span></td>',BP='<td class="pm"><span class="bx"></span></td>';
+  var names=P.topics.map(function(t){return PP_TL[t];}).join(', ');
+  var h='<div class="pp-head"><h1>MRAD SINGLE BEST ANSWER EXAMINATION</h1><div class="pp-sub">PAPER '+P.paper+' &ndash; '+escTP(names)+' &middot; '+P.items.length+' questions &middot; Time allowed: '+PP_LEN[P.n]+'</div></div>'
+   +'<table class="pp-info"><tr><td>Name:</td><td>Date:</td><td>Start time:</td><td>End time:</td></tr><tr><td colspan="2">Paper ID: '+P.id+'</td><td colspan="2">Conditions: &#9744; Timed &#9744; Untimed &#9744; Open book &#9744; Closed book</td></tr></table>'
+   +'<div class="pp-rule"><b>Instructions.</b> Choose ONE best answer (A&ndash;E) per question. Record answers on the Answer Grid (last pages), not here. Use dark pen, not pencil. Cross out options you eliminate. Sketch directly on the question. Mark your confidence and write the clock time at each checkpoint.</div>';
+  P.items.forEach(function(it,i){
+    var q=it.q,src=imgSrc(q.img);
+    h+='<div class="pp-q"><div class="pp-meta"><span>Q'+(i+1)+' &middot; ID '+escTP(qKey(q))+'</span><span>Flag &#9744; revisit</span></div>'
+     +'<div class="pp-stem"><b>'+(i+1)+'.</b> '+escTP(stripHLMarkers(q.q))+'</div>'
+     +(src?'<img class="pp-img" src="'+escTP(src).replace(/"/g,'&quot;')+'" alt="" onerror="this.style.display=\'none\'">':'')
+     +'<ul class="pp-opts">'+q.o.map(function(o){return '<li><i>'+escTP(o.charAt(0))+'</i><span>'+escTP(o.slice(3))+'</span></li>';}).join('')+'</ul></div>';
+  });
+  h+='<div class="pp-pb"></div><div class="pp-head"><h1>ANSWER GRID</h1><div class="pp-sub">Paper ID: '+P.id+' &middot; Write ONE capital letter per box &middot; Name: ____________ &middot; Date: ________</div></div>'
+   +'<table class="pp-grid"><thead><tr><th rowspan="2">Q</th><th rowspan="2">FIRST<br>answer</th><th rowspan="2">FINAL<br>answer</th><th colspan="3">Confidence</th><th rowspan="2">Flag</th><th colspan="5" class="pm">AFTER marking: error type</th></tr>'
+   +'<tr><th>Sure</th><th>Unsure</th><th>Guess</th><th class="pm">K</th><th class="pm">M</th><th class="pm">C</th><th class="pm">T</th><th class="pm">G</th></tr></thead><tbody>';
+  for(var i=0;i<P.items.length;i++){
+    h+='<tr><td class="n">'+(i+1)+'</td><td class="big"></td><td class="big"></td>'+BX+BX+BX+BX+BP+BP+BP+BP+BP+'</tr>';
+    if((i+1)%10===0&&i+1<P.items.length)h+='<tr class="clock"><td colspan="12"><b>Checkpoint after Q'+(i+1)+':</b> clock time ____ : ____ &nbsp;&nbsp; Questions left: '+(P.items.length-i-1)+'</td></tr>';
+  }
+  h+='</tbody></table><div class="pp-leg"><b>Error type (after marking, wrong answers only):</b> K = Knowledge gap &middot; M = Misread the question &middot; C = Careless slip &middot; T = Ran out of time &middot; G = Guessed.<br>Finish time: ____ : ____ &nbsp; Photograph this page flat, well lit, in dark pen.</div>';
+  return h;
+}
+function ppCSV(P){
+  function c(v){return '"'+String(v==null?'':v).replace(/"/g,'""').replace(/\s*[\r\n]+\s*/g,' ')+'"';}
+  var rows=[['Q','ID','Correct','Correct option text','Blueprint topic','System tag','Difficulty','Topic','Key point','Explanation']];
+  P.items.forEach(function(it,i){
+    var q=it.q,ct='';
+    q.o.forEach(function(o){if(o.charAt(0)===q.a)ct=o.slice(3);});
+    rows.push([i+1,qKey(q),q.a,ct,PP_TL[it.t],q.s||'',q.difficulty||'',q.topic||'',stripHLMarkers(q.kp||''),stripHLMarkers(q.e||'')]);
+  });
+  return rows.map(function(r){return r.map(c).join(',');}).join('\r\n');
+}
+function ppPrompt(P){
+  var bp=P.topics.map(function(t){return PP_TL[t]+': '+P.want[t];}).join(', ');
+  return 'I sat a self-timed radiology SBA practice paper (Paper ID '+P.id+', Paper '+P.paper+', '+P.items.length+' questions, '+PP_LEN[P.n]+'). Blueprint: '+bp+'.\n\n'
+   +'Sources: (1) photo(s) of my ANSWER GRID page, the primary source; (2) optional photos of my sketched question pages; (3) the answer key file answer_key_'+P.id+'.csv.\n\n'
+   +'Step 1: Transcribe my grid into a table (Q, first answer, final answer, confidence Sure/Unsure/Guess, flag, clock-time checkpoints, error-type letters if filled). Mark anything you cannot read clearly and WAIT for my corrections before marking.\n'
+   +'Step 2: Mark against the key. Report total score, percentage, and score per blueprint topic (use the key\'s Blueprint topic column).\n'
+   +'Step 3: Analyse: (a) calibration: Sure-and-wrong, Guess-and-right, accuracy by confidence level; (b) pacing from the clock checkpoints: where I slowed or rushed; (c) effect of changing answers (first vs final); (d) count my error types (K/M/C/T/G); (e) flagged questions: were they harder for me?\n'
+   +'Step 4: List my weakest subtopics (use the Topic and Key point columns), explain each wrong answer briefly using the Explanation column, and give a prioritised study plan for the next 7 days.';
+}
+function ppEl(id){return document.getElementById(id);}
+function openPaperDlg(){ppEl('paperOv').classList.add('show');}
+function closePaper(){ppEl('paperOv').classList.remove('show');}
+function ppMsg(t){ppEl('ppMsg').textContent=t||'';}
+function ppGenerate(){
+  var paper=Number(ppEl('ppPaper').value),n=Number(ppEl('ppLen').value),go=ppEl('ppGo');
+  go.disabled=true;ppEl('ppReady').style.display='none';ppMsg('');ppEl('ppSt').textContent='Loading all question sets...';
+  ensureAllSetsLoaded().then(function(){
+    var P=ppBuild(paper,n);
+    if(!P.items.length)throw new Error('no questions could be matched to this paper');
+    PP=P;ppEl('paperPrint').innerHTML=ppHTML(P);
+    var parts=P.topics.map(function(t){return PP_TL[t]+' '+P.got[t]+'/'+P.want[t];}).join(' \u00b7 '),notes='';
+    P.topics.forEach(function(t){if(P.base[t]<P.want[t])notes+=' '+PP_TL[t]+': only '+P.base[t]+' of '+P.want[t]+' available.';});
+    if(P.filled)notes+=' '+P.filled+' question(s) filled from other topics of this paper.';
+    if(P.short)notes+=' Paper has only '+P.items.length+' questions (not enough in the bank).';
+    ppEl('ppSt').textContent='Ready: '+P.id+'. '+parts+'.'+notes;
+    ppEl('ppReady').style.display='block';
+  }).catch(function(err){
+    ppEl('ppSt').textContent='Could not build the paper ('+(err&&err.message?err.message:'error')+').';
+  }).then(function(){go.disabled=false;});
+}
+function ppPrint(){
+  if(!PP)return;
+  document.body.classList.add('pp');
+  var done=function(){document.body.classList.remove('pp');window.removeEventListener('afterprint',done);};
+  window.addEventListener('afterprint',done);
+  setTimeout(function(){window.print();},60); // in the print dialog choose "Save as PDF"
+}
+function ppDownloadKey(){
+  if(!PP)return;
+  var b=new Blob(['\ufeff'+ppCSV(PP)],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='answer_key_'+PP.id+'.csv';document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},600);
+  ppMsg('Key file downloaded. Keep it unopened until you finish the paper.');
+}
+function ppCopyPrompt(){
+  if(!PP)return;
+  var text=ppPrompt(PP);
+  function ok(){ppMsg('Gemini prompt copied.');}
+  function fb(){var ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;opacity:0;';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);ok();}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(ok,fb);else fb();
+}
+/* ===== end exam paper generator ===== */
 buildSetGrid();
 initCountdown();
 initDraw();
