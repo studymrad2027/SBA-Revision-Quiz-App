@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  SBA companion screen - tablet page for the quiz app (ver2.html). Receives the current question over
+  Supabase Realtime (channel quiz-<code>), shows notes, can answer and navigate.
+  Full project notes: PROJECT_NOTES.md (read it first). Roles: ref / ai / mirror. Protocol events: q, hello, answer, nav.
+  Keep it standalone: no build step, no secret keys, small targeted edits.
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -118,6 +124,7 @@ body.r-ref #panel{padding:20px 24px;font-size:1.06em}
     <button type="button" id="bFull" class="ico" aria-pressed="false" aria-label="Full screen" title="Full screen"></button>
     <button type="button" id="bConfirm" aria-pressed="true" title="Tap an option, then press Submit. Turn off to send on the first tap.">Confirm taps</button>
     <button type="button" id="bAwake" aria-pressed="false">Stay awake</button>
+    <button type="button" id="bAuto" aria-pressed="false" title="Tap to arm: answered questions open Radiopaedia / Wikipedia in a second tab">Auto-open: Off</button>
     <button type="button" id="bSync" aria-label="Ask the quiz to send the current question again">Refresh</button>
     <button type="button" id="bCode">Code</button>
   </div>
@@ -144,7 +151,7 @@ body.r-ref #panel{padding:20px 24px;font-size:1.06em}
 (function(){
 var SUPABASE_URL='https://hdbbewazxtvpcjrtdtqq.supabase.co',SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkYmJld2F6eHR2cGNqcnRkdHFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4MDYyNTcsImV4cCI6MjEwNjM4MjI1N30.f2FNEwyddGknkzWYoJxmgsH8dqCcR0kLEs6jfAB2VkY';
 var $=function(id){return document.getElementById(id);};
-var S={code:'',role:'ref',sb:null,ch:null,d:null,lastT:0,fs:1,awake:false,wl:null,sel:'',sending:false,sendT:0,confirm:true,navBusy:false,navT:0};
+var S={code:'',role:'ref',sb:null,ch:null,d:null,lastT:0,fs:1,awake:false,wl:null,sel:'',sending:false,sendT:0,confirm:true,navBusy:false,navT:0,auto:0,win:null,openK:''};
 
 function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){}return null;}
 function esc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -281,6 +288,7 @@ function onData(p){
   S.lastT=p.t||Date.now();S.d=p;
   setStatus('live',p.phase==='idle'?'Connected, waiting for a question':'Receiving, updated '+clock());
   render();
+  autoGo(p);
 }
 function hello(){if(S.ch){try{S.ch.send({type:'broadcast',event:'hello',payload:{}});}catch(e){}}}
 function sendAnswer(L){
@@ -397,6 +405,33 @@ document.addEventListener('visibilitychange',function(){
   if(S.awake&&!S.wl)wakeOn();
   if(S.ch)hello();
 });
+
+var AUTO=['Off','Radiopaedia','Wikipedia'];
+function autoURL(d){
+  var term=(d.topic&&String(d.topic).trim())||plainOpt(d,d.a);
+  return S.auto===1
+    ?'https://radiopaedia.org/search?q='+encodeURIComponent(term)+'&scope=all'
+    :'https://en.wikipedia.org/w/index.php?search='+encodeURIComponent(term);
+}
+function autoGo(d){
+  if(!S.auto||!d||d.phase!=='answered'||d.k===S.openK)return;
+  if(!S.win||S.win.closed){toast('Lookup tab was closed. Tap Auto-open again');return;}
+  S.openK=d.k;
+  try{S.win.location.href=autoURL(d);}catch(e){}
+}
+$('bAuto').onclick=function(){
+  S.auto=(S.auto+1)%3;
+  if(S.auto){
+    if(!S.win||S.win.closed){
+      try{S.win=window.open('about:blank','sba_lookup');}catch(e){}
+      if(!S.win){S.auto=0;toast('Allow pop-ups for this site, then tap again');}
+    }
+  }else if(S.win&&!S.win.closed){try{S.win.close();}catch(e){}S.win=null;}
+  this.textContent='Auto-open: '+AUTO[S.auto];
+  this.setAttribute('aria-pressed',S.auto?'true':'false');
+  S.openK='';
+  if(S.auto&&S.d)autoGo(S.d);
+};
 
 /* ---- start ---- */
 (function init(){
