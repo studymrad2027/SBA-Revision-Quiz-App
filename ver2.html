@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <!--
-  EXAM PAPER BUBBLE-SHEET CONSTANTS (fixed coordinates, mm from the page's top-left)
-  @page: A4, margin 0 | grid page box: 210mm x 297mm, position:relative, overflow:hidden | 20 rows per page (page 1 = Q1-20, page 2 = Q21-40; 60/100-question papers add pages of 20)
+  EXAM PAPER BUBBLE-SHEET CONSTANTS v2 (fixed coordinates, mm from the page's top-left)
+  @page: A4, margin 0 | grid page box: 210mm x 297mm, position:relative, overflow:hidden | 50 rows per page (40 Q = 1 page, 60 Q and 100 Q = 2 pages: q=1-50, 51-60 / 51-100)
   Alignment marks: 6mm x 6mm solid black, top-left corners at (8,8) (196,8) (8,283) (196,283)
-  Bubble: outer diameter 6.5mm, stroke 0.25mm #999, empty white interior | first row centre y = 64mm | row pitch = 11mm (row r centre y = 64 + (r-1)*11) | row 20 centre y = 273mm
-  Bubble centre x: FIRST A-E 26,34,42,50,58 | FINAL A-E 72,80,88,96,104 | CONFIDENCE Sure/Unsure/Guess 120,130,140 | FLAG 152 | ERROR K,M,C,T,G 164,172,180,188,196
-  Q labels: 10pt, left x=8mm | group titles centre y=45mm | column headers centre y=52mm (9pt) | title y=16-22mm, paper ID y=22.5-26.5mm, instructions y=29-38mm | machine line centre y=292mm, 5pt gray
+  Bubble: outer diameter 4mm, stroke 0.2mm #999, empty white interior | first row centre y = 44mm | row pitch = 4.8mm (row r centre y = 44 + (r-1)*4.8) | row 50 centre y = 279.2mm
+  Bubble centre x: FIRST A-E 34,42,50,58,66 | FINAL A-E 86,94,102,110,118 | CONFIDENCE Sure/Unsure/Guess 140,152,164 | FLAG 180   (no error-type columns)
+  Q labels: 8pt, left x=14mm | group titles centre y=32mm | column headers centre y=37mm (8pt) | title at x=16 y=15-21mm, paper ID y=22-26mm, instructions x=78-192 y=15-26mm | machine line centre y=292mm, 5pt gray: RADSBA-GRID v2 | paper=<ID> | page=k/N | q=a-b
 -->
 <!--
   Backbencher Fast SBA Revision (Dr Ram) - quiz app, single standalone file (GitHub Pages + Supabase).
@@ -547,13 +547,14 @@ body:has(#exam.active)::before{display:none;}
   #paperPrint .pg-page.pg-first{break-before:page;page-break-before:always;}
   #paperPrint .pg-page:not(:last-child){break-after:page;page-break-after:always;}
   #paperPrint .pg-m{position:absolute;width:6mm;height:6mm;background:#000;}
-  #paperPrint .pg-t{position:absolute;height:5mm;line-height:5mm;text-align:center;font:9pt Helvetica,Arial,sans-serif;white-space:nowrap;color:#111;}
-  #paperPrint .pg-g{font-weight:700;font-size:8pt;}
+  #paperPrint .pg-t{position:absolute;height:5mm;line-height:5mm;text-align:center;font:8pt Helvetica,Arial,sans-serif;white-space:nowrap;color:#111;}
+  #paperPrint .pg-l{text-align:left;}
+  #paperPrint .pg-g{font-weight:700;}
   #paperPrint .pg-title{height:6mm;line-height:6mm;font:bold 14pt Helvetica,Arial,sans-serif;}
-  #paperPrint .pg-q{width:14mm;text-align:left;font-size:10pt;}
-  #paperPrint .pg-ins{position:absolute;left:16mm;top:29mm;width:178mm;font:6.5pt/3mm Helvetica,Arial,sans-serif;color:#333;}
-  #paperPrint .pg-b{position:absolute;width:6.5mm;height:6.5mm;box-sizing:border-box;border:0.25mm solid #999;border-radius:50%;background:#fff;}
-  #paperPrint .pg-ln{position:absolute;left:8mm;width:194mm;height:0;border-top:0.2mm solid #e2e2e2;}
+  #paperPrint .pg-q{width:14mm;text-align:left;font-size:8pt;}
+  #paperPrint .pg-ins{position:absolute;left:78mm;top:15mm;width:114mm;font:6pt/2.7mm Helvetica,Arial,sans-serif;color:#333;}
+  #paperPrint .pg-b{position:absolute;width:4mm;height:4mm;box-sizing:border-box;border:0.2mm solid #999;border-radius:50%;background:#fff;}
+  #paperPrint .pg-ln{position:absolute;left:14mm;width:172mm;height:0;border-top:0.2mm solid #d0d0d0;}
   #paperPrint .pg-mc{height:4mm;line-height:4mm;font-size:5pt;color:#888;}
 }
 </style>
@@ -582,8 +583,8 @@ body:has(#exam.active)::before{display:none;}
   <div class="pp-st" id="ppSt"></div>
   <div id="ppReady" style="display:none"><div class="pp-btns">
     <button class="main" onclick="ppPrint()">&#128424; Print / Save as PDF</button>
-    <button onclick="ppDownloadKey()">&#11015; Download answer key (CSV)</button>
-    <button onclick="ppCopyPrompt()">&#128203; Copy Gemini prompt</button>
+    <button onclick="ppDownloadPack()">&#11015; Download marking pack (for Gemini)</button>
+    <button onclick="ppDownloadKey()">&#11015; Download answer key only (CSV)</button>
   </div></div>
   <div class="pp-st" id="ppMsg" style="color:var(--gold)"></div>
   <div style="text-align:center;margin-top:8px"><button class="go-close" onclick="closePaper()">Close</button></div>
@@ -4373,37 +4374,38 @@ function ppBuild(paper,n){
   return {paper:paper,n:n,items:shuffleRandom(picked),topics:topics,want:want,base:base,got:got,short:short,filled:filled,
     id:'P'+paper+'-'+n+'-'+p2(d.getMonth()+1)+p2(d.getDate())+'-'+Math.random().toString(36).slice(2,4).toUpperCase()};
 }
-var PP_X={F:[26,34,42,50,58],N:[72,80,88,96,104],C:[120,130,140],G:[152],E:[164,172,180,188,196]};
+var PP_ROWS=50,PP_Y0=44,PP_DY=4.8,PP_D=4; // rows per page, first row centre y (mm), row pitch (mm), bubble outer diameter (mm)
+var PP_X={F:[34,42,50,58,66],N:[86,94,102,110,118],C:[140,152,164],G:[180]};
 function ppMm(v){return (Math.round(v*100)/100)+'mm';}
 function ppT(cx,cy,w,txt,cls){return '<div class="pg-t'+(cls?' '+cls:'')+'" style="left:'+ppMm(cx-w/2)+';top:'+ppMm(cy-2.5)+';width:'+ppMm(w)+'">'+txt+'</div>';}
-// one fixed-coordinate bubble-sheet page: 20 rows, everything position:absolute in mm from the page's top-left
+// one fixed-coordinate bubble-sheet page: up to 50 rows, everything position:absolute in mm from the page's top-left
 function ppGridPage(P,pg,pages){
-  var n=P.items.length,a=(pg-1)*20+1,b=Math.min(pg*20,n),rows=b-a+1,L='ABCDE',K='KMCTG',CF=['Sure','Unsure','Guess'],r,j,cy,h;
+  var n=P.items.length,a=(pg-1)*PP_ROWS+1,b=Math.min(pg*PP_ROWS,n),rows=b-a+1,L='ABCDE',CF=['Sure','Unsure','Guess'],r,j,cy,h,R=PP_D/2;
   h='<div class="pg-page'+(pg===1?' pg-first':'')+'">';
   [[8,8],[196,8],[8,283],[196,283]].forEach(function(m){h+='<div class="pg-m" style="left:'+m[0]+'mm;top:'+m[1]+'mm"></div>';});
-  h+='<div class="pg-t pg-title" style="left:0;top:16mm;width:210mm">ANSWER GRID</div>'
-   +'<div class="pg-t" style="left:0;top:22.5mm;width:210mm;height:4mm;line-height:4mm;font-size:9pt">Paper ID: '+escTP(P.id)+'</div>'
-   +'<div class="pg-ins">Fill the bubble with your stylus (scribble to fill most of it). FIRST = your first-pass answer. FINAL is optional: mark it only if you changed your mind; if it is blank, FIRST counts as final. Mark ONE confidence per question. Flag = revisit. Error type only after marking, for wrong answers: K knowledge gap, M misread, C careless slip, T ran out of time, G guessed.</div>';
-  h+=ppT(42,45,40,'FIRST','pg-g')+ppT(88,45,40,'FINAL','pg-g')+ppT(130,45,30,'Confidence','pg-g')+ppT(152,45,12,'Flag','pg-g')+ppT(180,45,44,'Error type after marking','pg-g');
-  for(j=0;j<5;j++)h+=ppT(PP_X.F[j],52,8,L[j])+ppT(PP_X.N[j],52,8,L[j])+ppT(PP_X.E[j],52,8,K[j]);
-  for(j=0;j<3;j++)h+=ppT(PP_X.C[j],52,10,CF[j]);
-  h+=ppT(152,52,10,'Flag');
+  h+='<div class="pg-t pg-l pg-title" style="left:16mm;top:15mm;width:58mm">ANSWER GRID</div>'
+   +'<div class="pg-t pg-l" style="left:16mm;top:22mm;width:58mm;height:4mm;line-height:4mm;font-size:9pt">Paper ID: '+escTP(P.id)+'</div>'
+   +'<div class="pg-ins">Fill the bubble with your stylus (scribble to fill most of it). FIRST = your first-pass answer. FINAL is optional: mark it only if you changed your mind; if it is blank, FIRST counts as final. Mark ONE confidence per question. Flag = revisit.</div>';
+  h+=ppT(50,32,44,'FIRST','pg-g')+ppT(102,32,44,'FINAL','pg-g')+ppT(152,32,40,'Confidence','pg-g')+ppT(180,32,16,'Flag','pg-g');
+  for(j=0;j<5;j++)h+=ppT(PP_X.F[j],37,6,L[j])+ppT(PP_X.N[j],37,6,L[j]);
+  for(j=0;j<3;j++)h+=ppT(PP_X.C[j],37,12,CF[j]);
+  h+=ppT(180,37,14,'revisit');
   for(r=0;r<rows;r++){
-    cy=64+r*11;
-    h+='<div class="pg-t pg-q" style="left:8mm;top:'+ppMm(cy-2.5)+'">Q'+(a+r)+'</div>';
-    ['F','N','C','G','E'].forEach(function(g){PP_X[g].forEach(function(x){h+='<div class="pg-b" style="left:'+ppMm(x-3.25)+';top:'+ppMm(cy-3.25)+'"></div>';});});
-    if(r<rows-1)h+='<div class="pg-ln" style="top:'+ppMm(cy+5.5)+'"></div>';
+    cy=PP_Y0+r*PP_DY;
+    h+='<div class="pg-t pg-q" style="left:14mm;top:'+ppMm(cy-2.5)+'">Q'+(a+r)+'</div>';
+    ['F','N','C','G'].forEach(function(g){PP_X[g].forEach(function(x){h+='<div class="pg-b" style="left:'+ppMm(x-R)+';top:'+ppMm(cy-R)+'"></div>';});});
+    if(r<rows-1&&(a+r)%5===0)h+='<div class="pg-ln" style="top:'+ppMm(cy+PP_DY/2)+'"></div>';
   }
-  h+='<div class="pg-t pg-mc" style="left:0;top:290mm;width:210mm">RADSBA-GRID v1 | paper='+escTP(P.id)+' | page='+pg+'/'+pages+' | q='+a+'-'+b+'</div></div>';
+  h+='<div class="pg-t pg-mc" style="left:0;top:290mm;width:210mm">RADSBA-GRID v2 | paper='+escTP(P.id)+' | page='+pg+'/'+pages+' | q='+a+'-'+b+'</div></div>';
   return h;
 }
 function ppHTML(P){
-  var n=P.items.length,pages=Math.ceil(n/20);
+  var n=P.items.length,pages=Math.ceil(n/PP_ROWS);
   var names=P.topics.map(function(t){return PP_TL[t];}).join(', ');
   var h='<table class="pp-flow"><thead><tr><td><div class="pp-sp"></div></td></tr></thead><tbody><tr><td class="pp-flowc">'
    +'<div class="pp-head"><h1>MRAD SINGLE BEST ANSWER EXAMINATION</h1><div class="pp-sub">PAPER '+P.paper+' &ndash; '+escTP(names)+' &middot; '+n+' questions &middot; Time allowed: '+PP_LEN[P.n]+'</div></div>'
    +'<table class="pp-info"><tr><td>Name:</td><td>Date:</td><td>Start time:</td><td>End time:</td></tr><tr><td colspan="2">Paper ID: '+P.id+'</td><td colspan="2">Conditions: &#9744; Timed &#9744; Untimed &#9744; Open book &#9744; Closed book</td></tr></table>'
-   +'<div class="pp-rule"><b>Instructions.</b> Choose ONE best answer (A&ndash;E) per question. Record answers on the Answer Grid (the last '+pages+' pages), not here. Use dark pen, not pencil. Cross out options you eliminate. Sketch directly on the question. Write the clock time at each checkpoint. Finish time: ____ : ____</div>';
+   +'<div class="pp-rule"><b>Instructions.</b> Choose ONE best answer (A&ndash;E) per question. Record answers on the Answer Grid ('+(pages===1?'the last page':'the last '+pages+' pages')+'), not here. Use dark pen, not pencil. Cross out options you eliminate. Sketch directly on the question. Write the clock time at each checkpoint. Finish time: ____ : ____</div>';
   P.items.forEach(function(it,i){
     var q=it.q,src=imgSrc(q.img);
     h+='<div class="pp-q"><div class="pp-meta"><span>Q'+(i+1)+' &middot; ID '+escTP(qKey(q))+'</span><span>Flag &#9744; revisit</span></div>'
@@ -4428,13 +4430,22 @@ function ppCSV(P){
 }
 function ppPrompt(P){
   var bp=P.topics.map(function(t){return PP_TL[t]+': '+P.want[t];}).join(', ');
-  return 'I sat a self-timed radiology SBA practice paper (Paper ID '+P.id+', Paper '+P.paper+', '+P.items.length+' questions, '+PP_LEN[P.n]+'). Blueprint: '+bp+'.\n\n'
-   +'Sources: (1) photo(s) of my ANSWER GRID page, the primary source; (2) optional photos of my sketched question pages; (3) the answer key file answer_key_'+P.id+'.csv.\n\n'
-   +'Step 1: Transcribe my grid into a table (Q, first answer, final answer, confidence Sure/Unsure/Guess, flag, clock-time checkpoints, error-type letters if filled). Mark anything you cannot read clearly and WAIT for my corrections before marking.\n'
-   +'Step 2: Mark against the key. Report total score, percentage, and score per blueprint topic (use the key\'s Blueprint topic column).\n'
-   +'Step 3: Analyse: (a) calibration: Sure-and-wrong, Guess-and-right, accuracy by confidence level; (b) pacing from the clock checkpoints: where I slowed or rushed; (c) effect of changing answers (first vs final); (d) count my error types (K/M/C/T/G); (e) flagged questions: were they harder for me?\n'
-   +'Step 4: List my weakest subtopics (use the Topic and Key point columns), explain each wrong answer briefly using the Explanation column, and give a prioritised study plan for the next 7 days.';
+  return 'MARKING INSTRUCTIONS (read this first)\n'
+   +'You are marking and analysing a self-timed radiology SBA practice paper I just sat.\n'
+   +'Paper ID: '+P.id+' | Paper '+P.paper+' | '+P.items.length+' questions | time allowed '+PP_LEN[P.n]+' | blueprint: '+bp+'\n\n'
+   +'WHAT YOU HAVE\n'
+   +'1. My ANSWER GRID (photo or PDF): a bubble sheet, one row per question with the Q number at the left. Filled bubbles are my marks. Columns left to right: FIRST answer A-E, FINAL answer A-E, Confidence (Sure / Unsure / Guess), Flag (revisit).\n'
+   +'2. The answer key: the CSV section at the bottom of THIS file.\n'
+   +'3. Optionally, photos of my sketched question pages (they show the clock-time checkpoints after Q10, Q20, ...).\n\n'
+   +'RULES\n'
+   +'- FINAL is optional. If the FINAL bubbles of a row are blank, my FIRST answer counts as my final answer.\n'
+   +'- No FIRST mark = unanswered. If two bubbles in one group look marked, report it as ambiguous instead of guessing.\n\n'
+   +'STEP 1: Transcribe my grid into a table (Q, FIRST, FINAL or "same", confidence, flag). List anything you cannot read clearly and ask me to confirm BEFORE marking.\n'
+   +'STEP 2: Mark against the key. Report total score, percentage, and score per blueprint topic (use the key\'s Blueprint topic column).\n'
+   +'STEP 3: Analyse: (a) calibration: Sure-and-wrong, Guess-and-right, accuracy by confidence level; (b) effect of changing answers (FIRST vs FINAL); (c) flagged questions: were they harder for me?; (d) pacing from the clock checkpoints, only if I gave you the question pages.\n'
+   +'STEP 4: List my weakest subtopics (use the Topic and Key point columns), explain each wrong answer briefly using the Explanation column, and give a prioritised study plan for the next 7 days.';
 }
+function ppPack(P){return ppPrompt(P)+'\n\n=== ANSWER KEY (CSV): do not open until the exam is finished ===\n'+ppCSV(P)+'\n';}
 function ppEl(id){return document.getElementById(id);}
 function openPaperDlg(){ppEl('paperOv').classList.add('show');}
 function closePaper(){ppEl('paperOv').classList.remove('show');}
@@ -4463,19 +4474,20 @@ function ppPrint(){
   window.addEventListener('afterprint',done);
   setTimeout(function(){window.print();},60); // in the print dialog choose "Save as PDF"
 }
+function ppSave(name,text,type){
+  var bl=new Blob(['\ufeff'+text],{type:type+';charset=utf-8'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},600);
+}
 function ppDownloadKey(){
   if(!PP)return;
-  var b=new Blob(['\ufeff'+ppCSV(PP)],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');
-  a.href=URL.createObjectURL(b);a.download='answer_key_'+PP.id+'.csv';document.body.appendChild(a);a.click();
-  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},600);
-  ppMsg('Key file downloaded. Keep it unopened until you finish the paper.');
+  ppSave('answer_key_'+PP.id+'.csv',ppCSV(PP),'text/csv');
+  ppMsg('Key CSV downloaded (plain key only). Keep it unopened until you finish the paper.');
 }
-function ppCopyPrompt(){
+function ppDownloadPack(){
   if(!PP)return;
-  var text=ppPrompt(PP);
-  function ok(){ppMsg('Gemini prompt copied.');}
-  function fb(){var ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;opacity:0;';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);ok();}
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(ok,fb);else fb();
+  ppSave('marking_pack_'+PP.id+'.txt',ppPack(PP),'text/plain');
+  ppMsg('Marking pack downloaded. After the paper: upload it to Gemini with a photo of your grid and say "Follow the instructions in the attached file".');
 }
 /* ===== end exam paper generator ===== */
 buildSetGrid();
