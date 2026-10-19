@@ -1,5 +1,13 @@
 <!DOCTYPE html>
 <!--
+  EXAM PAPER BUBBLE-SHEET CONSTANTS (fixed coordinates, mm from the page's top-left)
+  @page: A4, margin 0 | grid page box: 210mm x 297mm, position:relative, overflow:hidden | 20 rows per page (page 1 = Q1-20, page 2 = Q21-40; 60/100-question papers add pages of 20)
+  Alignment marks: 6mm x 6mm solid black, top-left corners at (8,8) (196,8) (8,283) (196,283)
+  Bubble: outer diameter 6.5mm, stroke 0.25mm #999, empty white interior | first row centre y = 64mm | row pitch = 11mm (row r centre y = 64 + (r-1)*11) | row 20 centre y = 273mm
+  Bubble centre x: FIRST A-E 26,34,42,50,58 | FINAL A-E 72,80,88,96,104 | CONFIDENCE Sure/Unsure/Guess 120,130,140 | FLAG 152 | ERROR K,M,C,T,G 164,172,180,188,196
+  Q labels: 10pt, left x=8mm | group titles centre y=45mm | column headers centre y=52mm (9pt) | title y=16-22mm, paper ID y=22.5-26.5mm, instructions y=29-38mm | machine line centre y=292mm, 5pt gray
+-->
+<!--
   Backbencher Fast SBA Revision (Dr Ram) - quiz app, single standalone file (GitHub Pages + Supabase).
   Full project notes: PROJECT_NOTES.md (read it first). Companion tablet page: companion.html.
   Quick map (search by name): renderQ, pick, nextQ/prevQ/skipQ, qKey, SETS (500 built-in questions),
@@ -9,7 +17,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Backbencher Fast SBA Revision - Dr Ram</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -491,6 +501,12 @@ body.voice-open #exam{padding-bottom:160px;}
 #drawCv{touch-action:none;}
 html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 
+/* ===== iPhone home-screen app: keep content clear of the status bar / home indicator ===== */
+body::before{content:"";display:block;height:env(safe-area-inset-top,0px);}
+body:has(#exam.active)::before{display:none;}
+.top-ctl{top:calc(12px + env(safe-area-inset-top,0px));}
+.hdr{padding-top:calc(9px + env(safe-area-inset-top,0px));}
+#drawBar{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));}
 /* ===== exam paper (PDF) ===== */
 #paperOv{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:250;align-items:center;justify-content:center;padding:16px;}
 #paperOv.show{display:flex;}
@@ -502,11 +518,17 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
 .pp-btns button{background:var(--bg2);border:1px solid rgba(212,168,67,.45);color:var(--gold);border-radius:9px;padding:10px;font-size:13px;font-weight:700;}
 .pp-btns button.main{background:linear-gradient(135deg,#d4a843,#b8901e);border:none;color:#0d1b2a;}
 #paperPrint{display:none;}
+@page{size:A4;margin:0;}
 @media print{
-  @page{size:A4;margin:12mm;}
-  body.pp{background:#fff!important;}
+  body::before{display:none!important;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  html,body.pp{margin:0;padding:0;background:#fff!important;}
   body.pp>*{display:none!important;}
   body.pp>#paperPrint{display:block!important;background:#fff;color:#111;font-family:Georgia,'Times New Roman',serif;}
+  #paperPrint .pp-flow{width:100%;border-collapse:collapse;}
+  #paperPrint .pp-flow>thead>tr>td,#paperPrint .pp-flow>tbody>tr>td,#paperPrint .pp-flow>tfoot>tr>td{padding:0;}
+  #paperPrint .pp-sp{height:12mm;}
+  #paperPrint .pp-flowc{padding:0 12mm!important;}
   #paperPrint .pp-head h1{font-size:15pt;text-align:center;margin:0 0 2pt;letter-spacing:.5px;}
   #paperPrint .pp-sub{text-align:center;font:9.5pt system-ui,sans-serif;margin-bottom:8pt;}
   #paperPrint .pp-info{width:100%;border-collapse:collapse;font:9.5pt system-ui,sans-serif;margin-bottom:8pt;}
@@ -519,18 +541,20 @@ html,body,button,a,input,select,label,.opt,.card{touch-action:manipulation;-webk
   #paperPrint .pp-opts{list-style:none;padding:0;margin:6pt 0 0;font-size:10.5pt;line-height:1.4;}
   #paperPrint .pp-opts li{display:flex;gap:6pt;margin:3pt 0;}
   #paperPrint .pp-opts i{font-style:normal;font-weight:700;min-width:12pt;}
-  #paperPrint .pp-pb{break-after:page;}
-  #paperPrint .pp-grid{width:100%;border-collapse:collapse;font:9pt system-ui,sans-serif;text-align:center;}
-  #paperPrint .pp-grid thead{display:table-header-group;}
-  #paperPrint .pp-grid tr{break-inside:avoid;}
-  #paperPrint .pp-grid th,#paperPrint .pp-grid td{border:1px solid #222;padding:2pt;}
-  #paperPrint .pp-grid th{background:#eee;font-size:8pt;}
-  #paperPrint .pp-grid td.n{font-weight:700;width:9mm;}
-  #paperPrint .pp-grid td.big{width:15mm;height:8mm;}
-  #paperPrint .pp-grid .pm{background:#f6f6f6;}
-  #paperPrint .pp-grid tr.clock td{background:#eee;text-align:left;padding:3pt 6pt;font-size:8.5pt;}
-  #paperPrint .bx{display:inline-block;width:10pt;height:10pt;border:1.2px solid #222;vertical-align:middle;}
-  #paperPrint .pp-leg{font:8.5pt/1.5 system-ui,sans-serif;margin-top:6pt;}
+  #paperPrint .pp-clock{border:1px dashed #666;padding:5pt 8pt;margin:4pt 0 10pt;font:9pt system-ui,sans-serif;break-inside:avoid;}
+  /* bubble-sheet pages: fixed mm coordinates from the page's top-left */
+  #paperPrint .pg-page{position:relative;width:210mm;height:297mm;overflow:hidden;box-sizing:border-box;background:#fff;break-inside:avoid;}
+  #paperPrint .pg-page.pg-first{break-before:page;page-break-before:always;}
+  #paperPrint .pg-page:not(:last-child){break-after:page;page-break-after:always;}
+  #paperPrint .pg-m{position:absolute;width:6mm;height:6mm;background:#000;}
+  #paperPrint .pg-t{position:absolute;height:5mm;line-height:5mm;text-align:center;font:9pt Helvetica,Arial,sans-serif;white-space:nowrap;color:#111;}
+  #paperPrint .pg-g{font-weight:700;font-size:8pt;}
+  #paperPrint .pg-title{height:6mm;line-height:6mm;font:bold 14pt Helvetica,Arial,sans-serif;}
+  #paperPrint .pg-q{width:14mm;text-align:left;font-size:10pt;}
+  #paperPrint .pg-ins{position:absolute;left:16mm;top:29mm;width:178mm;font:6.5pt/3mm Helvetica,Arial,sans-serif;color:#333;}
+  #paperPrint .pg-b{position:absolute;width:6.5mm;height:6.5mm;box-sizing:border-box;border:0.25mm solid #999;border-radius:50%;background:#fff;}
+  #paperPrint .pg-ln{position:absolute;left:8mm;width:194mm;height:0;border-top:0.2mm solid #e2e2e2;}
+  #paperPrint .pg-mc{height:4mm;line-height:4mm;font-size:5pt;color:#888;}
 }
 </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -4349,27 +4373,47 @@ function ppBuild(paper,n){
   return {paper:paper,n:n,items:shuffleRandom(picked),topics:topics,want:want,base:base,got:got,short:short,filled:filled,
     id:'P'+paper+'-'+n+'-'+p2(d.getMonth()+1)+p2(d.getDate())+'-'+Math.random().toString(36).slice(2,4).toUpperCase()};
 }
+var PP_X={F:[26,34,42,50,58],N:[72,80,88,96,104],C:[120,130,140],G:[152],E:[164,172,180,188,196]};
+function ppMm(v){return (Math.round(v*100)/100)+'mm';}
+function ppT(cx,cy,w,txt,cls){return '<div class="pg-t'+(cls?' '+cls:'')+'" style="left:'+ppMm(cx-w/2)+';top:'+ppMm(cy-2.5)+';width:'+ppMm(w)+'">'+txt+'</div>';}
+// one fixed-coordinate bubble-sheet page: 20 rows, everything position:absolute in mm from the page's top-left
+function ppGridPage(P,pg,pages){
+  var n=P.items.length,a=(pg-1)*20+1,b=Math.min(pg*20,n),rows=b-a+1,L='ABCDE',K='KMCTG',CF=['Sure','Unsure','Guess'],r,j,cy,h;
+  h='<div class="pg-page'+(pg===1?' pg-first':'')+'">';
+  [[8,8],[196,8],[8,283],[196,283]].forEach(function(m){h+='<div class="pg-m" style="left:'+m[0]+'mm;top:'+m[1]+'mm"></div>';});
+  h+='<div class="pg-t pg-title" style="left:0;top:16mm;width:210mm">ANSWER GRID</div>'
+   +'<div class="pg-t" style="left:0;top:22.5mm;width:210mm;height:4mm;line-height:4mm;font-size:9pt">Paper ID: '+escTP(P.id)+'</div>'
+   +'<div class="pg-ins">Fill the bubble with your stylus (scribble to fill most of it). FIRST = your first-pass answer. FINAL is optional: mark it only if you changed your mind; if it is blank, FIRST counts as final. Mark ONE confidence per question. Flag = revisit. Error type only after marking, for wrong answers: K knowledge gap, M misread, C careless slip, T ran out of time, G guessed.</div>';
+  h+=ppT(42,45,40,'FIRST','pg-g')+ppT(88,45,40,'FINAL','pg-g')+ppT(130,45,30,'Confidence','pg-g')+ppT(152,45,12,'Flag','pg-g')+ppT(180,45,44,'Error type after marking','pg-g');
+  for(j=0;j<5;j++)h+=ppT(PP_X.F[j],52,8,L[j])+ppT(PP_X.N[j],52,8,L[j])+ppT(PP_X.E[j],52,8,K[j]);
+  for(j=0;j<3;j++)h+=ppT(PP_X.C[j],52,10,CF[j]);
+  h+=ppT(152,52,10,'Flag');
+  for(r=0;r<rows;r++){
+    cy=64+r*11;
+    h+='<div class="pg-t pg-q" style="left:8mm;top:'+ppMm(cy-2.5)+'">Q'+(a+r)+'</div>';
+    ['F','N','C','G','E'].forEach(function(g){PP_X[g].forEach(function(x){h+='<div class="pg-b" style="left:'+ppMm(x-3.25)+';top:'+ppMm(cy-3.25)+'"></div>';});});
+    if(r<rows-1)h+='<div class="pg-ln" style="top:'+ppMm(cy+5.5)+'"></div>';
+  }
+  h+='<div class="pg-t pg-mc" style="left:0;top:290mm;width:210mm">RADSBA-GRID v1 | paper='+escTP(P.id)+' | page='+pg+'/'+pages+' | q='+a+'-'+b+'</div></div>';
+  return h;
+}
 function ppHTML(P){
-  var BX='<td><span class="bx"></span></td>',BP='<td class="pm"><span class="bx"></span></td>';
+  var n=P.items.length,pages=Math.ceil(n/20);
   var names=P.topics.map(function(t){return PP_TL[t];}).join(', ');
-  var h='<div class="pp-head"><h1>MRAD SINGLE BEST ANSWER EXAMINATION</h1><div class="pp-sub">PAPER '+P.paper+' &ndash; '+escTP(names)+' &middot; '+P.items.length+' questions &middot; Time allowed: '+PP_LEN[P.n]+'</div></div>'
+  var h='<table class="pp-flow"><thead><tr><td><div class="pp-sp"></div></td></tr></thead><tbody><tr><td class="pp-flowc">'
+   +'<div class="pp-head"><h1>MRAD SINGLE BEST ANSWER EXAMINATION</h1><div class="pp-sub">PAPER '+P.paper+' &ndash; '+escTP(names)+' &middot; '+n+' questions &middot; Time allowed: '+PP_LEN[P.n]+'</div></div>'
    +'<table class="pp-info"><tr><td>Name:</td><td>Date:</td><td>Start time:</td><td>End time:</td></tr><tr><td colspan="2">Paper ID: '+P.id+'</td><td colspan="2">Conditions: &#9744; Timed &#9744; Untimed &#9744; Open book &#9744; Closed book</td></tr></table>'
-   +'<div class="pp-rule"><b>Instructions.</b> Choose ONE best answer (A&ndash;E) per question. Record answers on the Answer Grid (last pages), not here. Use dark pen, not pencil. Cross out options you eliminate. Sketch directly on the question. Mark your confidence and write the clock time at each checkpoint.</div>';
+   +'<div class="pp-rule"><b>Instructions.</b> Choose ONE best answer (A&ndash;E) per question. Record answers on the Answer Grid (the last '+pages+' pages), not here. Use dark pen, not pencil. Cross out options you eliminate. Sketch directly on the question. Write the clock time at each checkpoint. Finish time: ____ : ____</div>';
   P.items.forEach(function(it,i){
     var q=it.q,src=imgSrc(q.img);
     h+='<div class="pp-q"><div class="pp-meta"><span>Q'+(i+1)+' &middot; ID '+escTP(qKey(q))+'</span><span>Flag &#9744; revisit</span></div>'
      +'<div class="pp-stem"><b>'+(i+1)+'.</b> '+escTP(stripHLMarkers(q.q))+'</div>'
      +(src?'<img class="pp-img" src="'+escTP(src).replace(/"/g,'&quot;')+'" alt="" onerror="this.style.display=\'none\'">':'')
      +'<ul class="pp-opts">'+q.o.map(function(o){return '<li><i>'+escTP(o.charAt(0))+'</i><span>'+escTP(o.slice(3))+'</span></li>';}).join('')+'</ul></div>';
+    if((i+1)%10===0&&i+1<n)h+='<div class="pp-clock"><b>Checkpoint after Q'+(i+1)+':</b> clock time ____ : ____ &nbsp;&nbsp; Questions left: '+(n-i-1)+'</div>';
   });
-  h+='<div class="pp-pb"></div><div class="pp-head"><h1>ANSWER GRID</h1><div class="pp-sub">Paper ID: '+P.id+' &middot; Write ONE capital letter per box &middot; Name: ____________ &middot; Date: ________</div></div>'
-   +'<table class="pp-grid"><thead><tr><th rowspan="2">Q</th><th rowspan="2">FIRST<br>answer</th><th rowspan="2">FINAL<br>answer</th><th colspan="3">Confidence</th><th rowspan="2">Flag</th><th colspan="5" class="pm">AFTER marking: error type</th></tr>'
-   +'<tr><th>Sure</th><th>Unsure</th><th>Guess</th><th class="pm">K</th><th class="pm">M</th><th class="pm">C</th><th class="pm">T</th><th class="pm">G</th></tr></thead><tbody>';
-  for(var i=0;i<P.items.length;i++){
-    h+='<tr><td class="n">'+(i+1)+'</td><td class="big"></td><td class="big"></td>'+BX+BX+BX+BX+BP+BP+BP+BP+BP+'</tr>';
-    if((i+1)%10===0&&i+1<P.items.length)h+='<tr class="clock"><td colspan="12"><b>Checkpoint after Q'+(i+1)+':</b> clock time ____ : ____ &nbsp;&nbsp; Questions left: '+(P.items.length-i-1)+'</td></tr>';
-  }
-  h+='</tbody></table><div class="pp-leg"><b>Error type (after marking, wrong answers only):</b> K = Knowledge gap &middot; M = Misread the question &middot; C = Careless slip &middot; T = Ran out of time &middot; G = Guessed.<br>Finish time: ____ : ____ &nbsp; Photograph this page flat, well lit, in dark pen.</div>';
+  h+='</td></tr></tbody><tfoot><tr><td><div class="pp-sp"></div></td></tr></tfoot></table>';
+  for(var pg=1;pg<=pages;pg++)h+=ppGridPage(P,pg,pages);
   return h;
 }
 function ppCSV(P){
