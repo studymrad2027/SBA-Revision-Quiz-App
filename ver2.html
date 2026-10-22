@@ -517,6 +517,7 @@ body:has(#exam.active)::before{display:none;}
 .pp-btns{display:flex;flex-direction:column;gap:7px;margin-top:6px;}
 .pp-btns button{background:var(--bg2);border:1px solid rgba(212,168,67,.45);color:var(--gold);border-radius:9px;padding:10px;font-size:13px;font-weight:700;}
 .pp-btns button.main{background:linear-gradient(135deg,#d4a843,#b8901e);border:none;color:#0d1b2a;}
+.pp-sec{font:700 10px sans-serif;text-transform:uppercase;letter-spacing:1px;color:var(--grey);margin:12px 0 5px;}
 #paperPrint{display:none;}
 @page{size:A4;margin:0;}
 @media print{
@@ -541,6 +542,13 @@ body:has(#exam.active)::before{display:none;}
   #paperPrint .pp-opts{list-style:none;padding:0;margin:6pt 0 0;font-size:10.5pt;line-height:1.4;}
   #paperPrint .pp-opts li{display:flex;gap:6pt;margin:3pt 0;}
   #paperPrint .pp-opts i{font-style:normal;font-weight:700;min-width:12pt;}
+  body.pp-exam #ppAI,body.pp-ai #ppExam{display:none!important;}
+  #paperPrint .pp-qa{display:grid;grid-template-columns:1fr 44mm;gap:5mm;}
+  #paperPrint .pp-panel{border:0.5mm solid #222;border-radius:1mm;padding:2mm;font:7.5pt/1.3 system-ui,sans-serif;align-self:start;}
+  #paperPrint .pp-panel .r{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.6mm;}
+  #paperPrint .pp-box{display:inline-block;border:0.4mm solid #222;box-sizing:border-box;flex:none;}
+  #paperPrint .pp-box.xl{width:13mm;height:13mm;}#paperPrint .pp-box.md{width:9mm;height:9mm;}#paperPrint .pp-box.sm{width:4.5mm;height:4.5mm;}
+  #paperPrint .pp-box.red{border-color:#c0392b;border-width:0.6mm;}
   #paperPrint .pp-clock{border:1px dashed #666;padding:5pt 8pt;margin:4pt 0 10pt;font:9pt system-ui,sans-serif;break-inside:avoid;}
   /* bubble-sheet pages: fixed mm coordinates from the page's top-left */
   #paperPrint .pg-page{position:relative;width:210mm;height:297mm;overflow:hidden;box-sizing:border-box;background:#fff;break-inside:avoid;}
@@ -581,11 +589,14 @@ body:has(#exam.active)::before{display:none;}
   <select id="ppLen" class="pp-sel"><option value="40">40 questions &ndash; 1 hour</option><option value="60">60 questions &ndash; 1 hour 30 minutes</option><option value="100">100 questions &ndash; 2 hours 30 minutes</option></select>
   <button class="btn-timed" id="ppGo" style="width:100%;margin:12px 0 8px" onclick="ppGenerate()">Generate paper</button>
   <div class="pp-st" id="ppSt"></div>
-  <div id="ppReady" style="display:none"><div class="pp-btns">
-    <button class="main" onclick="ppPrint()">&#128424; Print / Save as PDF</button>
-    <button onclick="ppDownloadPack()">&#11015; Download marking pack (for Gemini)</button>
-    <button onclick="ppDownloadKey()">&#11015; Download answer key only (CSV)</button>
-  </div></div>
+  <div id="ppReady" style="display:none">
+    <div class="pp-sec">1. Exam style (question pages + answer grid at the end)</div>
+    <div class="pp-btns"><button class="main" onclick="ppPrint('exam')">&#128424; Exam paper: Print / Save as PDF</button><button onclick="ppDownloadPack('exam')">&#11015; Marking pack for the exam paper</button></div>
+    <div class="pp-sec">2. AI style (write the letter in red beside each question)</div>
+    <div class="pp-btns"><button class="main" onclick="ppPrint('ai')">&#128424; AI paper: Print / Save as PDF</button><button onclick="ppDownloadPack('ai')">&#11015; Marking pack for the AI paper</button></div>
+    <div class="pp-sec">Key only</div>
+    <div class="pp-btns"><button onclick="ppDownloadKey()">&#11015; Answer key only (CSV)</button></div>
+  </div>
   <div class="pp-st" id="ppMsg" style="color:var(--gold)"></div>
   <div style="text-align:center;margin-top:8px"><button class="go-close" onclick="closePaper()">Close</button></div>
 </div></div>
@@ -4418,6 +4429,27 @@ function ppHTML(P){
   for(var pg=1;pg<=pages;pg++)h+=ppGridPage(P,pg,pages);
   return h;
 }
+// AI-style paper: the answer panel sits beside each question (write the letter in RED), no grid pages
+function ppAIHTML(P){
+  var n=P.items.length,names=P.topics.map(function(t){return PP_TL[t];}).join(', ');
+  var h='<table class="pp-flow"><thead><tr><td><div class="pp-sp"></div></td></tr></thead><tbody><tr><td class="pp-flowc">'
+   +'<div class="pp-head"><h1>MRAD SINGLE BEST ANSWER EXAMINATION</h1><div class="pp-sub">PAPER '+P.paper+' &ndash; '+escTP(names)+' &middot; '+n+' questions &middot; Time allowed: '+PP_LEN[P.n]+' &middot; answer-in-question edition</div></div>'
+   +'<table class="pp-info"><tr><td>Name:</td><td>Date:</td><td>Start time:</td><td>End time:</td></tr><tr><td colspan="2">Paper ID: '+P.id+'</td><td colspan="2">Conditions: &#9744; Timed &#9744; Untimed &#9744; Open book &#9744; Closed book</td></tr></table>'
+   +'<div class="pp-rule"><b>Instructions.</b> Choose ONE best answer (A&ndash;E). Write the letter in <b style="color:#c0392b">RED</b> in the ANSWER box beside the question. Use the FINAL box only if you change your mind (if blank, ANSWER counts). Tick ONE confidence and tick Flag to revisit. Sketch and cross out eliminated options in black or blue, never red. Write the clock time at each checkpoint.</div>';
+  P.items.forEach(function(it,i){
+    var q=it.q,src=imgSrc(q.img),no=i+1;
+    h+='<div class="pp-q pp-qa"><div><div class="pp-meta"><span>Q'+no+' &middot; ID '+escTP(qKey(q))+'</span></div>'
+     +'<div class="pp-stem"><b>'+no+'.</b> '+escTP(stripHLMarkers(q.q))+'</div>'
+     +(src?'<img class="pp-img" src="'+escTP(src).replace(/"/g,'&quot;')+'" alt="" onerror="this.style.display=\'none\'">':'')
+     +'<ul class="pp-opts">'+q.o.map(function(o){return '<li><i>'+escTP(o.charAt(0))+'</i><span>'+escTP(o.slice(3))+'</span></li>';}).join('')+'</ul></div>'
+     +'<div class="pp-panel"><div class="r"><b>Q'+no+' ANSWER</b><span class="pp-box xl red"></span></div>'
+     +'<div class="r"><span>FINAL (only if changed)</span><span class="pp-box md"></span></div>'
+     +'<div class="r"><span>Sure</span><span class="pp-box sm"></span></div><div class="r"><span>Unsure</span><span class="pp-box sm"></span></div><div class="r"><span>Guess</span><span class="pp-box sm"></span></div>'
+     +'<div class="r"><span>Flag: revisit</span><span class="pp-box sm"></span></div></div></div>';
+    if(no%10===0&&no<n)h+='<div class="pp-clock"><b>Checkpoint after Q'+no+':</b> clock time ____ : ____ &nbsp;&nbsp; Questions left: '+(n-no)+'</div>';
+  });
+  return h+'</td></tr></tbody><tfoot><tr><td><div class="pp-sp"></div></td></tr></tfoot></table>';
+}
 function ppCSV(P){
   function c(v){return '"'+String(v==null?'':v).replace(/"/g,'""').replace(/\s*[\r\n]+\s*/g,' ')+'"';}
   var rows=[['Q','ID','Correct','Correct option text','Blueprint topic','System tag','Difficulty','Topic','Key point','Explanation']];
@@ -4428,24 +4460,26 @@ function ppCSV(P){
   });
   return rows.map(function(r){return r.map(c).join(',');}).join('\r\n');
 }
-function ppPrompt(P){
-  var bp=P.topics.map(function(t){return PP_TL[t]+': '+P.want[t];}).join(', ');
+function ppPrompt(P,kind){
+  var ai=kind==='ai',bp=P.topics.map(function(t){return PP_TL[t]+': '+P.want[t];}).join(', ');
+  var have=ai
+   ?'1. My ANSWERED PAPER (PDF or photos). Each question has an answer panel on its right: an ANSWER box (a capital letter I wrote in RED), an optional FINAL box (a letter, only if I changed my mind), confidence ticks (Sure / Unsure / Guess) and a Flag tick. Black or blue marks on the question itself are my working and eliminated options, NOT answers.\n2. The answer key: the CSV section at the bottom of THIS file. Match by question number and the ID printed above each question.\n3. Clock-time checkpoints are written on the question pages after Q10, Q20, ...\n\n'
+   :'1. My ANSWER GRID (photo or PDF): a bubble sheet, one row per question with the Q number at the left. Filled bubbles are my marks. Columns left to right: FIRST answer A-E, FINAL answer A-E, Confidence (Sure / Unsure / Guess), Flag (revisit).\n2. The answer key: the CSV section at the bottom of THIS file.\n3. Optionally, photos of my sketched question pages (they show the clock-time checkpoints after Q10, Q20, ...).\n\n';
+  var rules=ai
+   ?'- Only the letter in the ANSWER box (red) counts as my answer. FINAL is optional; if the FINAL box is blank, ANSWER is my final answer.\n- Empty ANSWER box = unanswered. If a box holds two different letters, or you cannot read it, report it as ambiguous instead of guessing.\n\n'
+   :'- FINAL is optional. If the FINAL bubbles of a row are blank, my FIRST answer counts as my final answer.\n- No FIRST mark = unanswered. If two bubbles in one group look marked, report it as ambiguous instead of guessing.\n\n';
+  var s1=ai?'STEP 1: Transcribe my answers into a table (Q, ANSWER, FINAL or "same", confidence, flag, clock times). List anything you cannot read clearly and ask me to confirm BEFORE marking.\n'
+           :'STEP 1: Transcribe my grid into a table (Q, FIRST, FINAL or "same", confidence, flag). List anything you cannot read clearly and ask me to confirm BEFORE marking.\n';
+  var d=ai?'(d) pacing from the clock checkpoints (time per 10 questions, where I slowed or rushed).':'(d) pacing from the clock checkpoints, only if I gave you the question pages.';
   return 'MARKING INSTRUCTIONS (read this first)\n'
-   +'You are marking and analysing a self-timed radiology SBA practice paper I just sat.\n'
+   +'You are marking and analysing a self-timed radiology SBA practice paper I just sat. Compare my answers with the key; do not re-solve the questions yourself.\n'
    +'Paper ID: '+P.id+' | Paper '+P.paper+' | '+P.items.length+' questions | time allowed '+PP_LEN[P.n]+' | blueprint: '+bp+'\n\n'
-   +'WHAT YOU HAVE\n'
-   +'1. My ANSWER GRID (photo or PDF): a bubble sheet, one row per question with the Q number at the left. Filled bubbles are my marks. Columns left to right: FIRST answer A-E, FINAL answer A-E, Confidence (Sure / Unsure / Guess), Flag (revisit).\n'
-   +'2. The answer key: the CSV section at the bottom of THIS file.\n'
-   +'3. Optionally, photos of my sketched question pages (they show the clock-time checkpoints after Q10, Q20, ...).\n\n'
-   +'RULES\n'
-   +'- FINAL is optional. If the FINAL bubbles of a row are blank, my FIRST answer counts as my final answer.\n'
-   +'- No FIRST mark = unanswered. If two bubbles in one group look marked, report it as ambiguous instead of guessing.\n\n'
-   +'STEP 1: Transcribe my grid into a table (Q, FIRST, FINAL or "same", confidence, flag). List anything you cannot read clearly and ask me to confirm BEFORE marking.\n'
+   +'WHAT YOU HAVE\n'+have+'RULES\n'+rules+s1
    +'STEP 2: Mark against the key. Report total score, percentage, and score per blueprint topic (use the key\'s Blueprint topic column).\n'
-   +'STEP 3: Analyse: (a) calibration: Sure-and-wrong, Guess-and-right, accuracy by confidence level; (b) effect of changing answers (FIRST vs FINAL); (c) flagged questions: were they harder for me?; (d) pacing from the clock checkpoints, only if I gave you the question pages.\n'
+   +'STEP 3: Analyse: (a) calibration: Sure-and-wrong, Guess-and-right, accuracy by confidence level; (b) effect of changing answers (first vs final); (c) flagged questions: were they harder for me?; '+d+'\n'
    +'STEP 4: List my weakest subtopics (use the Topic and Key point columns), explain each wrong answer briefly using the Explanation column, and give a prioritised study plan for the next 7 days.';
 }
-function ppPack(P){return ppPrompt(P)+'\n\n=== ANSWER KEY (CSV): do not open until the exam is finished ===\n'+ppCSV(P)+'\n';}
+function ppPack(P,kind){return ppPrompt(P,kind)+'\n\n=== ANSWER KEY (CSV): do not open until the exam is finished ===\n'+ppCSV(P)+'\n';}
 function ppEl(id){return document.getElementById(id);}
 function openPaperDlg(){ppEl('paperOv').classList.add('show');}
 function closePaper(){ppEl('paperOv').classList.remove('show');}
@@ -4456,7 +4490,7 @@ function ppGenerate(){
   ensureAllSetsLoaded().then(function(){
     var P=ppBuild(paper,n);
     if(!P.items.length)throw new Error('no questions could be matched to this paper');
-    PP=P;ppEl('paperPrint').innerHTML=ppHTML(P);
+    PP=P;ppEl('paperPrint').innerHTML='<div id="ppExam">'+ppHTML(P)+'</div><div id="ppAI">'+ppAIHTML(P)+'</div>';
     var parts=P.topics.map(function(t){return PP_TL[t]+' '+P.got[t]+'/'+P.want[t];}).join(' \u00b7 '),notes='';
     P.topics.forEach(function(t){if(P.base[t]<P.want[t])notes+=' '+PP_TL[t]+': only '+P.base[t]+' of '+P.want[t]+' available.';});
     if(P.filled)notes+=' '+P.filled+' question(s) filled from other topics of this paper.';
@@ -4467,10 +4501,13 @@ function ppGenerate(){
     ppEl('ppSt').textContent='Could not build the paper ('+(err&&err.message?err.message:'error')+').';
   }).then(function(){go.disabled=false;});
 }
-function ppPrint(){
+function ppPrint(kind){
   if(!PP)return;
-  document.body.classList.add('pp');
-  var done=function(){document.body.classList.remove('pp');window.removeEventListener('afterprint',done);};
+  kind=kind==='ai'?'ai':'exam';
+  var oldTitle=document.title;
+  document.title=(kind==='ai'?'ai_paper_':'exam_paper_')+PP.id; // becomes the suggested PDF file name
+  document.body.classList.add('pp','pp-'+kind);
+  var done=function(){document.body.classList.remove('pp','pp-exam','pp-ai');document.title=oldTitle;window.removeEventListener('afterprint',done);};
   window.addEventListener('afterprint',done);
   setTimeout(function(){window.print();},60); // in the print dialog choose "Save as PDF"
 }
@@ -4484,9 +4521,10 @@ function ppDownloadKey(){
   ppSave('answer_key_'+PP.id+'.csv',ppCSV(PP),'text/csv');
   ppMsg('Key CSV downloaded (plain key only). Keep it unopened until you finish the paper.');
 }
-function ppDownloadPack(){
+function ppDownloadPack(kind){
   if(!PP)return;
-  ppSave('marking_pack_'+PP.id+'.txt',ppPack(PP),'text/plain');
+  kind=kind==='ai'?'ai':'exam';
+  ppSave('marking_pack_'+PP.id+'_'+kind+'.txt',ppPack(PP,kind),'text/plain');
   ppMsg('Marking pack downloaded. After the paper: upload it to Gemini with a photo of your grid and say "Follow the instructions in the attached file".');
 }
 /* ===== end exam paper generator ===== */
